@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EventOrganizer.Api/EventOrganizer.Api.csproj" />
+    <Project Path="src/EventOrganizer.Application/EventOrganizer.Application.csproj" />
+    <Project Path="src/EventOrganizer.Domain/EventOrganizer.Domain.csproj" />
+    <Project Path="src/EventOrganizer.Infrastructure/EventOrganizer.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EventOrganizer.Tests/EventOrganizer.Tests.csproj" />
+  </Folder>
+</Solution>
