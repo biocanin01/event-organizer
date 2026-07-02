@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Infrastructure.Identity;
+﻿using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,9 @@ namespace EventOrganizer.Infrastructure
         {
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddScoped<IApplicationDbContext>(provider =>
+                provider.GetRequiredService<AppDbContext>());
 
             services.AddDataProtection();
 

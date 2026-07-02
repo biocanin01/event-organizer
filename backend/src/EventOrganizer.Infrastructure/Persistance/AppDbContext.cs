@@ -1,3 +1,4 @@
+using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Resources;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Infrastructure.Persistance
 {
-    public sealed class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+    public sealed class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
