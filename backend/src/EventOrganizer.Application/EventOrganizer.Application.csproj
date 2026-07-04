@@ -14,9 +14,6 @@
   <ItemGroup>
     <Folder Include="Commands\CancelEvent\" />
     <Folder Include="Commands\PublishEvent\" />
-    <Folder Include="Queries\GetEventById\" />
-    <Folder Include="Queries\ListEvents\" />
-    <Folder Include="Responses\" />
   </ItemGroup>
 
   <PropertyGroup>
