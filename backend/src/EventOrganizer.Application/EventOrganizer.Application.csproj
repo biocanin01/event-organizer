@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Commands\CreateEvent\" />
     <Folder Include="Commands\CancelEvent\" />
     <Folder Include="Commands\PublishEvent\" />
     <Folder Include="Queries\GetEventById\" />
