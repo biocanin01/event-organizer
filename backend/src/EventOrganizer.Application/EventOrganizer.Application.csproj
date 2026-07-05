@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <Folder Include="Commands\CancelEvent\" />
-    <Folder Include="Commands\PublishEvent\" />
   </ItemGroup>
 
   <PropertyGroup>
