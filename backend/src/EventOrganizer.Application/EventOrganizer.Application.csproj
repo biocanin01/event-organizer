@@ -11,10 +11,6 @@
     <ProjectReference Include="..\EventOrganizer.Domain\EventOrganizer.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Commands\CancelEvent\" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
