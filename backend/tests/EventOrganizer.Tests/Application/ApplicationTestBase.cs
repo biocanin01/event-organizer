@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Infrastructure.Identity;
+﻿using EventOrganizer.Domain.Events;
+using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,30 @@ namespace EventOrganizer.Tests.Application
             await DbContext.SaveChangesAsync();
 
             return user.Id;
+        }
+
+        protected async Task<Event> CreateEventAsync(
+            Guid? organizerUserId = null,
+            string title = "Software Architecture Seminar",
+            DateTime? startsAtUtc = null)
+        {
+            var resolvedOrganizerUserId = organizerUserId ?? await CreateOrganizerUserAsync();
+            var resolvedStartsAtUtc = startsAtUtc ?? new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
+
+
+            var eventItem = Event.Create(
+                title,
+                "Seminar about modern web architecture.",
+                resolvedStartsAtUtc,
+                resolvedStartsAtUtc.AddHours(4),
+                80,
+                resolvedOrganizerUserId,
+                new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
+
+            DbContext.Events.Add(eventItem);
+            await DbContext.SaveChangesAsync();
+
+            return eventItem;
         }
 
         public void Dispose()
