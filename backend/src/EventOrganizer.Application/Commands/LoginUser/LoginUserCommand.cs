@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using EventOrganizer.Application.Responses;
+using MediatR;
 
 namespace EventOrganizer.Application.Commands.LoginUser
 {
