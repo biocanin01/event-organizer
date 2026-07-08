@@ -36,6 +36,8 @@ namespace EventOrganizer.Infrastructure
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
 
+            services.AddScoped<IdentitySeeder>();
+
             return services;
         }
     }
