@@ -25,6 +25,8 @@ namespace EventOrganizer.Infrastructure
             services.AddScoped<IApplicationDbContext>(provider =>
                 provider.GetRequiredService<AppDbContext>());
 
+            services.AddHttpContextAccessor();
+
             services.Configure<JwtSettings>(
                 configuration.GetSection(JwtSettings.SectionName));
 
@@ -71,6 +73,7 @@ namespace EventOrganizer.Infrastructure
 
             services.AddScoped<IdentitySeeder>();
 
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IIdentityService, IdentityService>();
             services.AddScoped<ITokenService, JwtTokenService>();
 
