@@ -1,4 +1,5 @@
 using EventOrganizer.Application;
+using EventOrganizer.Api.Middleware;
 using EventOrganizer.Infrastructure;
 using EventOrganizer.Infrastructure.Identity;
 
@@ -22,6 +23,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
