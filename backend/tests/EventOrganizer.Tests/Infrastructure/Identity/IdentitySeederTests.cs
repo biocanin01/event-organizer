@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Infrastructure.Identity;
+﻿using EventOrganizer.Application.Common.Constants;
+using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
