@@ -71,6 +71,9 @@ namespace EventOrganizer.Infrastructure
 
             services.AddScoped<IdentitySeeder>();
 
+            services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<ITokenService, JwtTokenService>();
+
             return services;
         }
     }
