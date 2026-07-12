@@ -75,6 +75,7 @@ namespace EventOrganizer.Infrastructure
 
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             services.AddScoped<ITokenService, JwtTokenService>();
 
             return services;

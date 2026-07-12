@@ -11,5 +11,7 @@ namespace EventOrganizer.Infrastructure.Authentication
         public string SigningKey { get; init; } = string.Empty;
 
         public int AccessTokenExpirationMinutes { get; init; }
+
+        public int RefreshTokenExpirationDays { get; init; }
     }
 }
