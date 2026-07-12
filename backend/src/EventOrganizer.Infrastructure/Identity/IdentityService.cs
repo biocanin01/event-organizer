@@ -92,5 +92,18 @@ namespace EventOrganizer.Infrastructure.Identity
             var roles = await _userManager.GetRolesAsync(user);
             return roles.ToArray();
         }
+
+        public async Task<AuthUserResult?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            var user = await _userManager.Users.FirstOrDefaultAsync(currentUser => currentUser.Id == userId, cancellationToken);
+
+            return user is null
+                ? null
+                : new AuthUserResult(
+                    user.Id,
+                    user.FullName,
+                    user.Email!,
+                    user.Status);
+        }
     }
 }

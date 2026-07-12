@@ -1,0 +1,13 @@
+﻿using FluentValidation;
+
+namespace EventOrganizer.Application.Commands.RefreshToken
+{
+    public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenCommand>
+    {
+        public RefreshTokenCommandValidator()
+        {
+            RuleFor(command => command.RefreshToken)
+                .NotEmpty();
+        }
+    }
+}

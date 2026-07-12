@@ -25,5 +25,9 @@
             Guid userId,
             string role,
             CancellationToken cancellationToken);
+
+        Task<AuthUserResult?> FindByIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken);
     }
 }

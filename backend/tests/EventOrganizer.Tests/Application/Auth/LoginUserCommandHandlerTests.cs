@@ -219,6 +219,11 @@ namespace EventOrganizer.Tests.Application.Auth
             {
                 _roles[userId] = roles.ToList();
             }
+
+            public Task<AuthUserResult?> FindByIdAsync(Guid userId, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private sealed class FakeTokenService : ITokenService
@@ -254,6 +259,16 @@ namespace EventOrganizer.Tests.Application.Auth
         private sealed class FakeRefreshTokenStore : IRefreshTokenStore
         {
             public List<(Guid UserId, string TokenHash, DateTime ExpiresAtUtc, string? IpAddress)> StoredRefreshTokens { get; } = [];
+
+            public Task<StoredRefreshTokenResult?> FindByTokenHashAsync(string tokenHash, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task RotateAsync(Guid refreshTokenId, Guid userId, string newTokenHash, DateTime newExpiresAtUtc, string? ipAddress, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
 
             public Task StoreAsync(
                 Guid userId,
