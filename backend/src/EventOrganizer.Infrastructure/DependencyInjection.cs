@@ -73,8 +73,10 @@ namespace EventOrganizer.Infrastructure
 
             services.AddScoped<IdentitySeeder>();
 
+            services.AddScoped<IClientContextService, ClientContextService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             services.AddScoped<ITokenService, JwtTokenService>();
 
