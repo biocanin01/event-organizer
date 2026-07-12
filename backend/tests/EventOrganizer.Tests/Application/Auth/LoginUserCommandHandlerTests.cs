@@ -20,9 +20,17 @@ namespace EventOrganizer.Tests.Application.Auth
             var identityService = new FakeIdentityService(user, "Password1");
             identityService.SetRoles(user.UserId, [ApplicationRoles.Participant]);
 
+            var clientContextService = new FakeClientContextService();
+            var refreshTokenService = new FakeRefreshTokenService();
+            var refreshTokenStore = new FakeRefreshTokenStore();
             var tokenService = new FakeTokenService();
 
-            var handler = new LoginUserCommandHandler(identityService, tokenService);
+            var handler = new LoginUserCommandHandler(
+                identityService,
+                clientContextService,
+                refreshTokenService,
+                refreshTokenStore,
+                tokenService);
 
             var command = new LoginUserCommand(
                 "test.user@example.com",
@@ -34,16 +42,33 @@ namespace EventOrganizer.Tests.Application.Auth
             Assert.Equal(user.FullName, result.FullName);
             Assert.Equal(user.Email, result.Email);
             Assert.Equal("access-token", result.AccessToken);
+            Assert.Equal("refresh-token", result.RefreshToken);
+            Assert.Equal(
+                new DateTime(2026, 7, 18, 12, 0, 0, DateTimeKind.Utc),
+                result.RefreshTokenExpiresAtUtc);
             Assert.Contains(ApplicationRoles.Participant, result.Roles);
+
+            Assert.Single(refreshTokenStore.StoredRefreshTokens);
+            Assert.Equal(user.UserId, refreshTokenStore.StoredRefreshTokens[0].UserId);
+            Assert.Equal("refresh-token-hash", refreshTokenStore.StoredRefreshTokens[0].TokenHash);
+            Assert.Equal("127.0.0.1", refreshTokenStore.StoredRefreshTokens[0].IpAddress);
         }
 
         [Fact]
         public async Task Handle_WhenEmailDoesNotExist_ThrowsUnauthorizedException()
         {
             var identityService = new FakeIdentityService();
+            var clientContextService = new FakeClientContextService();
+            var refreshTokenService = new FakeRefreshTokenService();
+            var refreshTokenStore = new FakeRefreshTokenStore();
             var tokenService = new FakeTokenService();
 
-            var handler = new LoginUserCommandHandler(identityService, tokenService);
+            var handler = new LoginUserCommandHandler(
+                identityService,
+                clientContextService,
+                refreshTokenService,
+                refreshTokenStore,
+                tokenService);
 
             var command = new LoginUserCommand(
                 "missing.user@example.com",
@@ -51,6 +76,8 @@ namespace EventOrganizer.Tests.Application.Auth
 
             await Assert.ThrowsAsync<UnauthorizedException>(() =>
                 handler.Handle(command, CancellationToken.None));
+
+            Assert.Empty(refreshTokenStore.StoredRefreshTokens);
         }
 
         [Fact]
@@ -63,9 +90,17 @@ namespace EventOrganizer.Tests.Application.Auth
                 UserStatus.Active);
 
             var identityService = new FakeIdentityService(user, "Password1");
+            var clientContextService = new FakeClientContextService();
+            var refreshTokenService = new FakeRefreshTokenService();
+            var refreshTokenStore = new FakeRefreshTokenStore();
             var tokenService = new FakeTokenService();
 
-            var handler = new LoginUserCommandHandler(identityService, tokenService);
+            var handler = new LoginUserCommandHandler(
+                identityService,
+                clientContextService,
+                refreshTokenService,
+                refreshTokenStore,
+                tokenService);
 
             var command = new LoginUserCommand(
                 "test.user@example.com",
@@ -73,6 +108,8 @@ namespace EventOrganizer.Tests.Application.Auth
 
             await Assert.ThrowsAsync<UnauthorizedException>(() =>
                 handler.Handle(command, CancellationToken.None));
+
+            Assert.Empty(refreshTokenStore.StoredRefreshTokens);
         }
 
         [Theory]
@@ -88,9 +125,17 @@ namespace EventOrganizer.Tests.Application.Auth
                 status);
 
             var identityService = new FakeIdentityService(user, "Password1");
+            var clientContextService = new FakeClientContextService();
+            var refreshTokenService = new FakeRefreshTokenService();
+            var refreshTokenStore = new FakeRefreshTokenStore();
             var tokenService = new FakeTokenService();
 
-            var handler = new LoginUserCommandHandler(identityService, tokenService);
+            var handler = new LoginUserCommandHandler(
+                identityService,
+                clientContextService,
+                refreshTokenService,
+                refreshTokenStore,
+                tokenService);
 
             var command = new LoginUserCommand(
                 "test.user@example.com",
@@ -98,6 +143,8 @@ namespace EventOrganizer.Tests.Application.Auth
 
             await Assert.ThrowsAsync<UnauthorizedException>(() =>
                 handler.Handle(command, CancellationToken.None));
+
+            Assert.Empty(refreshTokenStore.StoredRefreshTokens);
         }
 
         private sealed class FakeIdentityService : IIdentityService
@@ -186,6 +233,44 @@ namespace EventOrganizer.Tests.Application.Auth
                     "access-token",
                     new DateTime(2026, 7, 11, 12, 0, 0, DateTimeKind.Utc));
             }
+        }
+
+        private sealed class FakeRefreshTokenService : IRefreshTokenService
+        {
+            public RefreshTokenResult CreateRefreshToken()
+            {
+                return new RefreshTokenResult(
+                    "refresh-token",
+                    "refresh-token-hash",
+                    new DateTime(2026, 7, 18, 12, 0, 0, DateTimeKind.Utc));
+            }
+
+            public string HashToken(string token)
+            {
+                return $"{token}-hash";
+            }
+        }
+
+        private sealed class FakeRefreshTokenStore : IRefreshTokenStore
+        {
+            public List<(Guid UserId, string TokenHash, DateTime ExpiresAtUtc, string? IpAddress)> StoredRefreshTokens { get; } = [];
+
+            public Task StoreAsync(
+                Guid userId,
+                string tokenHash,
+                DateTime expiresAtUtc,
+                string? ipAddress,
+                CancellationToken cancellationToken)
+            {
+                StoredRefreshTokens.Add((userId, tokenHash, expiresAtUtc, ipAddress));
+
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class FakeClientContextService : IClientContextService
+        {
+            public string? IpAddress => "127.0.0.1";
         }
     }
 }
