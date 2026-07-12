@@ -21,6 +21,8 @@ namespace EventOrganizer.Infrastructure.Persistance
 
         public DbSet<Registration> Registrations => Set<Registration>();
 
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
