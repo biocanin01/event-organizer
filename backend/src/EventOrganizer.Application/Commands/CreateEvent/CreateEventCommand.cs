@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 
 namespace EventOrganizer.Application.Commands.CreateEvent
 {
@@ -7,6 +7,5 @@ namespace EventOrganizer.Application.Commands.CreateEvent
         string Description,
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
-        int Capacity,
-        Guid OrganizerUserId) : IRequest<Guid>;
+        int Capacity) : IRequest<Guid>;
 }

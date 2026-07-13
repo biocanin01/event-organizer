@@ -1,4 +1,4 @@
-﻿using EventOrganizer.Application.Commands.CreateEvent;
+using EventOrganizer.Application.Commands.CreateEvent;
 using EventOrganizer.Application.Common.Behaviors;
 using FluentValidation;
 using MediatR;
@@ -22,8 +22,7 @@ namespace EventOrganizer.Tests.Application
                 "Invalid event.",
                 new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc),
-                0,
-                Guid.Empty);
+                0);
 
             Task<Guid> Next(CancellationToken cancellationToken)
             {
@@ -55,8 +54,7 @@ namespace EventOrganizer.Tests.Application
                 "Valid event.",
                 startsAtUtc,
                 startsAtUtc.AddHours(4),
-                80,
-                Guid.NewGuid());
+                80);
 
             Task<Guid> Next(CancellationToken cancellationToken)
             {

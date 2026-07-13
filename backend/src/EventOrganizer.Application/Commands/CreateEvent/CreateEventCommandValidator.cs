@@ -1,10 +1,10 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace EventOrganizer.Application.Commands.CreateEvent
 {
     public sealed class CreateEventCommandValidator : AbstractValidator<CreateEventCommand>
     {
-        public CreateEventCommandValidator() 
+        public CreateEventCommandValidator()
         {
             RuleFor(command => command.Title)
                 .NotEmpty()
@@ -18,9 +18,6 @@ namespace EventOrganizer.Application.Commands.CreateEvent
 
             RuleFor(command => command.Capacity)
                 .GreaterThan(0);
-
-            RuleFor(command => command.OrganizerUserId)
-                .NotEmpty();
         }
     }
 }
