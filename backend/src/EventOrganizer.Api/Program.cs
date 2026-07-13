@@ -1,4 +1,6 @@
 using EventOrganizer.Application;
+using EventOrganizer.Application.Common.Constants;
+using EventOrganizer.Api.Authorization;
 using EventOrganizer.Api.Middleware;
 using EventOrganizer.Infrastructure;
 using EventOrganizer.Infrastructure.Identity;
@@ -11,6 +13,14 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        AuthorizationPolicies.CanCreateEvents,
+        policy => policy.RequireRole(
+            ApplicationRoles.Organizer,
+            ApplicationRoles.Admin));
+});
 
 var app = builder.Build();
 
