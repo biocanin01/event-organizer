@@ -35,6 +35,9 @@ namespace EventOrganizer.Infrastructure
                 .Get<JwtSettings>()
                 ?? throw new InvalidOperationException("JWT settings are not configured.");
 
+            services.Configure<InitialAdminSettings>(
+                configuration.GetSection(InitialAdminSettings.SectionName));
+
             services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>

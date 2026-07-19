@@ -11,6 +11,7 @@ namespace EventOrganizer.Infrastructure.Identity
             var seeder = scope.ServiceProvider.GetRequiredService<IdentitySeeder>();
 
             await seeder.SeedRolesAsync();
+            await seeder.SeedInitialAdminAsync();
         }
     }
 }
