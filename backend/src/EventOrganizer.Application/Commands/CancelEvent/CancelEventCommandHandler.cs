@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Application.Common.Exceptions;
+using EventOrganizer.Application.Common.Authorization;
+using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Events;
 using MediatR;
@@ -9,10 +10,14 @@ namespace EventOrganizer.Application.Commands.CancelEvent
     public sealed class CancelEventCommandHandler : IRequestHandler<CancelEventCommand>
     {
         private readonly IApplicationDbContext _dbContext;
+        private readonly EventAuthorizationService _eventAuthorizationService;
 
-        public CancelEventCommandHandler(IApplicationDbContext dbContext)
+        public CancelEventCommandHandler(
+            IApplicationDbContext dbContext,
+            EventAuthorizationService eventAuthorizationService)
         {
             _dbContext = dbContext;
+            _eventAuthorizationService = eventAuthorizationService;
         }
 
         public async Task Handle(
@@ -28,6 +33,8 @@ namespace EventOrganizer.Application.Commands.CancelEvent
             {
                 throw new NotFoundException(nameof(Event), request.EventId);
             }
+
+            _eventAuthorizationService.EnsureCanManage(eventItem);
 
             eventItem.Cancel(DateTime.UtcNow);
 

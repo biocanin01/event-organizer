@@ -1,6 +1,8 @@
 using EventOrganizer.Api.Authorization;
 using EventOrganizer.Api.Contracts.Events;
+using EventOrganizer.Application.Commands.CancelEvent;
 using EventOrganizer.Application.Commands.CreateEvent;
+using EventOrganizer.Application.Commands.PublishEvent;
 using EventOrganizer.Application.Queries.GetPublishedEventById;
 using EventOrganizer.Application.Queries.ListPublishedEvents;
 using EventOrganizer.Application.Responses;
@@ -69,6 +71,42 @@ namespace EventOrganizer.Api.Controllers
             return StatusCode(
                 StatusCodes.Status201Created,
                 new CreateEventResponse(eventId));
+        }
+
+        [HttpPatch("{id:guid}/publish")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Publish(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(
+                new PublishEventCommand(id),
+                cancellationToken);
+
+            return NoContent();
+        }
+
+        [HttpPatch("{id:guid}/cancel")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Cancel(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(
+                new CancelEventCommand(id),
+                cancellationToken);
+
+            return NoContent();
         }
     }
 }

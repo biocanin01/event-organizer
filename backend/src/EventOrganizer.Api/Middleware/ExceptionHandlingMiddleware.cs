@@ -48,6 +48,11 @@ namespace EventOrganizer.Api.Middleware
                     exception.Message,
                     Array.Empty<string>()),
 
+                ForbiddenException => (
+                    HttpStatusCode.Forbidden,
+                    exception.Message,
+                    Array.Empty<string>()),
+
                 NotFoundException => (
                     HttpStatusCode.NotFound,
                     exception.Message,

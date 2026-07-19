@@ -25,13 +25,15 @@ namespace EventOrganizer.Tests.Application
 
         protected AppDbContext DbContext { get; }
 
-        protected async Task<Guid> CreateOrganizerUserAsync()
+        protected async Task<Guid> CreateOrganizerUserAsync(string? email = null)
         {
+            var resolvedEmail = email ?? "organizer@example.com";
+
             var user = new ApplicationUser
             {
                 Id = Guid.NewGuid(),
-                UserName = "organizer@example.com",
-                Email = "organizer@example.com",
+                UserName = resolvedEmail,
+                Email = resolvedEmail,
                 FullName = "Test Organizer",
                 CreatedAtUtc = DateTime.UtcNow,
             };

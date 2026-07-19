@@ -30,6 +30,12 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole(
             ApplicationRoles.Organizer,
             ApplicationRoles.Admin));
+
+    options.AddPolicy(
+        AuthorizationPolicies.CanManageEvents,
+        policy => policy.RequireRole(
+            ApplicationRoles.Organizer,
+            ApplicationRoles.Admin));
 });
 
 var app = builder.Build();

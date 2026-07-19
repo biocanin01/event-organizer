@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Application.Common.Exceptions;
+using EventOrganizer.Application.Common.Authorization;
+using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Events;
 using MediatR;
@@ -9,10 +10,14 @@ namespace EventOrganizer.Application.Commands.PublishEvent
     public sealed class PublishEventCommandHandler : IRequestHandler<PublishEventCommand>
     {
         private readonly IApplicationDbContext _dbContext;
+        private readonly EventAuthorizationService _eventAuthorizationService;
 
-        public PublishEventCommandHandler(IApplicationDbContext dbContext)
+        public PublishEventCommandHandler(
+            IApplicationDbContext dbContext,
+            EventAuthorizationService eventAuthorizationService)
         {
             _dbContext = dbContext;
+            _eventAuthorizationService = eventAuthorizationService;
         }
 
         public async Task Handle(PublishEventCommand request, CancellationToken cancellationToken)
@@ -26,6 +31,8 @@ namespace EventOrganizer.Application.Commands.PublishEvent
             {
                 throw new NotFoundException(nameof(Event), request.EventId);
             }
+
+            _eventAuthorizationService.EnsureCanManage(eventItem);
 
             eventItem.Publish(DateTime.UtcNow);
 

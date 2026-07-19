@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Application.Common.Behaviors;
+using EventOrganizer.Application.Common.Authorization;
+using EventOrganizer.Application.Common.Behaviors;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ namespace EventOrganizer.Application
             services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+            services.AddScoped<EventAuthorizationService>();
 
             return services;
         }
