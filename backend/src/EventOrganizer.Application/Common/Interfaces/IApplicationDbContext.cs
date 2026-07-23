@@ -10,6 +10,8 @@ namespace EventOrganizer.Application.Common.Interfaces
 
         DbSet<Resource> Resources { get; }
 
+        DbSet<ResourceReservation> ResourceReservations { get; }
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }
