@@ -41,6 +41,10 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole(
             ApplicationRoles.Organizer,
             ApplicationRoles.Admin));
+
+    options.AddPolicy(
+        AuthorizationPolicies.CanManageResources,
+        policy => policy.RequireRole(ApplicationRoles.Admin));
 });
 
 var app = builder.Build();
