@@ -19,6 +19,8 @@ namespace EventOrganizer.Application
 
             services.AddScoped<EventAuthorizationService>();
 
+            services.AddScoped<ResourceReservationAuthorizationService>();
+
             return services;
         }
     }

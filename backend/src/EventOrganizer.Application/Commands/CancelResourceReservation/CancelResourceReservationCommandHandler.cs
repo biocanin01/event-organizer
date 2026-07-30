@@ -1,5 +1,7 @@
+using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Resources;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +12,14 @@ namespace EventOrganizer.Application.Commands.CancelResourceReservation
         : IRequestHandler<CancelResourceReservationCommand>
     {
         private readonly IApplicationDbContext _dbContext;
+        private readonly ResourceReservationAuthorizationService _authorizationService;
 
-        public CancelResourceReservationCommandHandler(IApplicationDbContext dbContext)
+        public CancelResourceReservationCommandHandler(
+            IApplicationDbContext dbContext,
+            ResourceReservationAuthorizationService authorizationService)
         {
             _dbContext = dbContext;
+            _authorizationService = authorizationService;
         }
 
         public async Task Handle(
@@ -31,6 +37,18 @@ namespace EventOrganizer.Application.Commands.CancelResourceReservation
                     nameof(ResourceReservation),
                     request.ReservationId);
             }
+
+            var eventItem = await _dbContext.Events
+                .FirstOrDefaultAsync(
+                    eventItem => eventItem.Id == reservation.EventId,
+                    cancellationToken);
+
+            if (eventItem is null)
+            {
+                throw new NotFoundException(nameof(Event), reservation.EventId);
+            }
+
+            _authorizationService.EnsureCanCancel(reservation, eventItem);
 
             reservation.Cancel(DateTime.UtcNow);
 

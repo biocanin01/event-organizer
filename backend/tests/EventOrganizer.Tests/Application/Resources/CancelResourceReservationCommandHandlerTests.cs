@@ -1,5 +1,8 @@
 using EventOrganizer.Application.Commands.CancelResourceReservation;
+using EventOrganizer.Application.Common.Authorization;
+using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Application.Common.Exceptions;
+using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,8 +16,11 @@ namespace EventOrganizer.Tests.Application.Resources
         public async Task Handle_WhenReservationCanBeCancelled_CancelsReservation(
             ResourceReservationStatus status)
         {
-            var reservation = await CreateReservationAsync(status);
-            var handler = new CancelResourceReservationCommandHandler(DbContext);
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var reservation = await CreateReservationAsync(status, organizerUserId);
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
 
             await handler.Handle(
                 new CancelResourceReservationCommand(reservation.Id),
@@ -34,7 +40,10 @@ namespace EventOrganizer.Tests.Application.Resources
         [Fact]
         public async Task Handle_WhenReservationDoesNotExist_ThrowsNotFoundException()
         {
-            var handler = new CancelResourceReservationCommandHandler(DbContext);
+            var organizerUserId = Guid.NewGuid();
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
 
             var action = () => handler.Handle(
                 new CancelResourceReservationCommand(Guid.NewGuid()),
@@ -46,8 +55,13 @@ namespace EventOrganizer.Tests.Application.Resources
         [Fact]
         public async Task Handle_WhenReservationIsRejected_ThrowsInvalidOperationException()
         {
-            var reservation = await CreateReservationAsync(ResourceReservationStatus.Rejected);
-            var handler = new CancelResourceReservationCommandHandler(DbContext);
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var reservation = await CreateReservationAsync(
+                ResourceReservationStatus.Rejected,
+                organizerUserId);
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
 
             var action = () => handler.Handle(
                 new CancelResourceReservationCommand(reservation.Id),
@@ -56,10 +70,86 @@ namespace EventOrganizer.Tests.Application.Resources
             await Assert.ThrowsAsync<InvalidOperationException>(action);
         }
 
-        private async Task<ResourceReservation> CreateReservationAsync(
-            ResourceReservationStatus status)
+        [Fact]
+        public async Task Handle_WhenAdminCancelsAnyReservation_CancelsReservation()
         {
-            var eventItem = await CreateEventAsync();
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var adminUserId = await CreateOrganizerUserAsync("admin@example.com");
+            var reservation = await CreateReservationAsync(
+                ResourceReservationStatus.Pending,
+                organizerUserId);
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(adminUserId, ApplicationRoles.Admin));
+
+            await handler.Handle(
+                new CancelResourceReservationCommand(reservation.Id),
+                CancellationToken.None);
+
+            Assert.Equal(ResourceReservationStatus.Cancelled, reservation.Status);
+        }
+
+        [Fact]
+        public async Task Handle_WhenOrganizerDoesNotOwnReservationEvent_ThrowsForbiddenException()
+        {
+            var ownerUserId = await CreateOrganizerUserAsync();
+            var otherOrganizerUserId = await CreateOrganizerUserAsync("other-organizer@example.com");
+            var reservation = await CreateReservationAsync(
+                ResourceReservationStatus.Pending,
+                ownerUserId);
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(otherOrganizerUserId, ApplicationRoles.Organizer));
+
+            var action = () => handler.Handle(
+                new CancelResourceReservationCommand(reservation.Id),
+                CancellationToken.None);
+
+            await Assert.ThrowsAsync<ForbiddenException>(action);
+        }
+
+        [Fact]
+        public async Task Handle_WhenParticipantCancelsReservation_ThrowsForbiddenException()
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var participantUserId = await CreateOrganizerUserAsync("participant@example.com");
+            var reservation = await CreateReservationAsync(
+                ResourceReservationStatus.Pending,
+                organizerUserId);
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(participantUserId, ApplicationRoles.Participant));
+
+            var action = () => handler.Handle(
+                new CancelResourceReservationCommand(reservation.Id),
+                CancellationToken.None);
+
+            await Assert.ThrowsAsync<ForbiddenException>(action);
+        }
+
+        [Fact]
+        public async Task Handle_WhenUserIsNotAuthenticated_ThrowsUnauthorizedException()
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var reservation = await CreateReservationAsync(
+                ResourceReservationStatus.Pending,
+                organizerUserId);
+            var handler = new CancelResourceReservationCommandHandler(
+                DbContext,
+                CreateAuthorizationService(null));
+
+            var action = () => handler.Handle(
+                new CancelResourceReservationCommand(reservation.Id),
+                CancellationToken.None);
+
+            await Assert.ThrowsAsync<UnauthorizedException>(action);
+        }
+
+        private async Task<ResourceReservation> CreateReservationAsync(
+            ResourceReservationStatus status,
+            Guid organizerUserId)
+        {
+            var eventItem = await CreateEventAsync(organizerUserId);
             var resource = Resource.Create(
                 "Main Conference Hall",
                 "A hall suitable for conferences.",
@@ -87,6 +177,35 @@ namespace EventOrganizer.Tests.Application.Resources
             await DbContext.SaveChangesAsync();
 
             return reservation;
+        }
+
+        private static ResourceReservationAuthorizationService CreateAuthorizationService(
+            Guid? userId,
+            params string[] roles)
+        {
+            return new ResourceReservationAuthorizationService(
+                new TestCurrentUserService(userId, roles));
+        }
+
+        private sealed class TestCurrentUserService : ICurrentUserService
+        {
+            private readonly IReadOnlyCollection<string> _roles;
+
+            public TestCurrentUserService(Guid? userId, params string[] roles)
+            {
+                UserId = userId;
+                _roles = roles;
+            }
+
+            public Guid? UserId { get; }
+
+            public string? Email => null;
+
+            public bool IsAuthenticated => UserId is not null;
+
+            public IReadOnlyCollection<string> Roles => _roles;
+
+            public bool IsInRole(string role) => _roles.Contains(role);
         }
     }
 }
