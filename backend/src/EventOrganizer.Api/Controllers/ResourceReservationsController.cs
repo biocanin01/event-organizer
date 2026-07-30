@@ -123,7 +123,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpPatch("{id:guid}/cancel")]
-        [Authorize(Policy = AuthorizationPolicies.CanManageResourceReservations)]
+        [Authorize(Policy = AuthorizationPolicies.CanCancelResourceReservations)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

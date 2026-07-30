@@ -94,10 +94,77 @@ namespace EventOrganizer.Tests.Api
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
+        [Fact]
+        public async Task CancelReservation_WithoutAuthentication_ReturnsUnauthorized()
+        {
+            var client = _factory.CreateClient();
+
+            var response = await client.PatchAsync(
+                $"/api/resource-reservations/{Guid.NewGuid()}/cancel",
+                null);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelReservation_WithParticipantRole_ReturnsForbidden()
+        {
+            var client = await CreateAuthenticatedClientAsync(ApplicationRoles.Participant);
+
+            var response = await client.PatchAsync(
+                $"/api/resource-reservations/{Guid.NewGuid()}/cancel",
+                null);
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelReservation_WithOrganizerRoleAndOwnReservation_ReturnsNoContent()
+        {
+            var organizerUserId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(
+                organizerUserId,
+                ApplicationRoles.Organizer);
+            var reservationId = await CreateReservationAsync(organizerUserId);
+
+            var response = await client.PatchAsync(
+                $"/api/resource-reservations/{reservationId}/cancel",
+                null);
+
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CancelReservation_WithAdminRole_ReturnsNoContent()
+        {
+            var reservationId = await CreateReservationAsync();
+            var client = await CreateAuthenticatedClientAsync(ApplicationRoles.Admin);
+
+            var response = await client.PatchAsync(
+                $"/api/resource-reservations/{reservationId}/cancel",
+                null);
+
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
         private async Task<HttpClient> CreateAuthenticatedClientAsync(string role)
         {
             var client = _factory.CreateClient();
             var userId = Guid.NewGuid();
+
+            await CreateTestUserAsync(userId);
+
+            client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+            client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role);
+
+            return client;
+        }
+
+        private async Task<HttpClient> CreateAuthenticatedClientAsync(
+            Guid userId,
+            string role)
+        {
+            var client = _factory.CreateClient();
 
             await CreateTestUserAsync(userId);
 
@@ -119,9 +186,9 @@ namespace EventOrganizer.Tests.Api
                 startsAtUtc.AddHours(2));
         }
 
-        private async Task<Guid> CreateReservationAsync()
+        private async Task<Guid> CreateReservationAsync(Guid? organizerUserId = null)
         {
-            var data = await CreateEventAndResourceAsync();
+            var data = await CreateEventAndResourceAsync(organizerUserId);
             var startsAtUtc = new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
 
             using var scope = _factory.Services.CreateScope();
@@ -140,20 +207,26 @@ namespace EventOrganizer.Tests.Api
             return reservation.Id;
         }
 
-        private async Task<(Guid EventId, Guid ResourceId)> CreateEventAndResourceAsync()
+        private async Task<(Guid EventId, Guid ResourceId)> CreateEventAndResourceAsync(
+            Guid? organizerUserId = null)
         {
             using var scope = _factory.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var user = new ApplicationUser
+            var resolvedOrganizerUserId = organizerUserId ?? Guid.NewGuid();
+
+            if (organizerUserId is null)
             {
-                Id = Guid.NewGuid(),
-                UserName = $"{Guid.NewGuid():N}@example.com",
-                Email = $"{Guid.NewGuid():N}@example.com",
-                FullName = "Test Organizer",
-                Status = UserStatus.Active,
-                CreatedAtUtc = DateTime.UtcNow,
-            };
+                dbContext.Users.Add(new ApplicationUser
+                {
+                    Id = resolvedOrganizerUserId,
+                    UserName = $"{Guid.NewGuid():N}@example.com",
+                    Email = $"{Guid.NewGuid():N}@example.com",
+                    FullName = "Test Organizer",
+                    Status = UserStatus.Active,
+                    CreatedAtUtc = DateTime.UtcNow,
+                });
+            }
 
             var eventItem = EventOrganizer.Domain.Events.Event.Create(
                 "Clean Architecture Seminar",
@@ -161,7 +234,7 @@ namespace EventOrganizer.Tests.Api
                 new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 9, 1, 13, 0, 0, DateTimeKind.Utc),
                 80,
-                user.Id,
+                resolvedOrganizerUserId,
                 DateTime.UtcNow);
 
             var resource = Resource.Create(
@@ -170,7 +243,6 @@ namespace EventOrganizer.Tests.Api
                 ResourceType.Venue,
                 DateTime.UtcNow);
 
-            dbContext.Users.Add(user);
             dbContext.Events.Add(eventItem);
             dbContext.Resources.Add(resource);
             await dbContext.SaveChangesAsync();
