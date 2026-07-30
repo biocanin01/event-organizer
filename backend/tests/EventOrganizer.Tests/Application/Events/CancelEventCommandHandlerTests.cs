@@ -4,6 +4,8 @@ using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Resources;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Tests.Application.Events
 {
@@ -41,6 +43,57 @@ namespace EventOrganizer.Tests.Application.Events
                 CancellationToken.None);
 
             Assert.Equal(EventStatus.Cancelled, eventItem.Status);
+        }
+
+        [Theory]
+        [InlineData(ResourceReservationStatus.Pending)]
+        [InlineData(ResourceReservationStatus.Confirmed)]
+        public async Task Handle_WhenEventHasActiveReservations_CancelsReservations(
+            ResourceReservationStatus status)
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var eventItem = await CreateEventAsync(organizerUserId);
+            var reservation = await CreateReservationAsync(eventItem.Id, status);
+            var handler = new CancelEventCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+
+            await handler.Handle(
+                new CancelEventCommand(eventItem.Id),
+                CancellationToken.None);
+
+            DbContext.ChangeTracker.Clear();
+
+            var cancelledReservation = await DbContext.ResourceReservations
+                .SingleAsync(item => item.Id == reservation.Id);
+
+            Assert.Equal(ResourceReservationStatus.Cancelled, cancelledReservation.Status);
+            Assert.NotNull(cancelledReservation.UpdatedAtUtc);
+        }
+
+        [Theory]
+        [InlineData(ResourceReservationStatus.Rejected)]
+        [InlineData(ResourceReservationStatus.Cancelled)]
+        public async Task Handle_WhenEventHasInactiveReservations_DoesNotChangeReservations(
+            ResourceReservationStatus status)
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var eventItem = await CreateEventAsync(organizerUserId);
+            var reservation = await CreateReservationAsync(eventItem.Id, status);
+            var handler = new CancelEventCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+
+            await handler.Handle(
+                new CancelEventCommand(eventItem.Id),
+                CancellationToken.None);
+
+            DbContext.ChangeTracker.Clear();
+
+            var unchangedReservation = await DbContext.ResourceReservations
+                .SingleAsync(item => item.Id == reservation.Id);
+
+            Assert.Equal(status, unchangedReservation.Status);
         }
 
         [Fact]
@@ -109,6 +162,43 @@ namespace EventOrganizer.Tests.Application.Events
             params string[] roles)
         {
             return new EventAuthorizationService(new TestCurrentUserService(userId, roles));
+        }
+
+        private async Task<ResourceReservation> CreateReservationAsync(
+            Guid eventId,
+            ResourceReservationStatus status)
+        {
+            var resource = Resource.Create(
+                "Main Conference Hall",
+                "A hall suitable for conferences.",
+                ResourceType.Venue,
+                DateTime.UtcNow);
+
+            var reservation = ResourceReservation.Create(
+                eventId,
+                resource.Id,
+                new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 9, 1, 11, 0, 0, DateTimeKind.Utc),
+                DateTime.UtcNow);
+
+            if (status == ResourceReservationStatus.Confirmed)
+            {
+                reservation.Confirm(DateTime.UtcNow);
+            }
+            else if (status == ResourceReservationStatus.Rejected)
+            {
+                reservation.Reject(DateTime.UtcNow);
+            }
+            else if (status == ResourceReservationStatus.Cancelled)
+            {
+                reservation.Cancel(DateTime.UtcNow);
+            }
+
+            DbContext.Resources.Add(resource);
+            DbContext.ResourceReservations.Add(reservation);
+            await DbContext.SaveChangesAsync();
+
+            return reservation;
         }
 
         private sealed class TestCurrentUserService : ICurrentUserService

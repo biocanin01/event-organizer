@@ -2,6 +2,7 @@ using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Resources;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,7 +37,21 @@ namespace EventOrganizer.Application.Commands.CancelEvent
 
             _eventAuthorizationService.EnsureCanManage(eventItem);
 
-            eventItem.Cancel(DateTime.UtcNow);
+            var now = DateTime.UtcNow;
+
+            eventItem.Cancel(now);
+
+            var activeReservations = await _dbContext.ResourceReservations
+                .Where(reservation =>
+                    reservation.EventId == request.EventId
+                    && (reservation.Status == ResourceReservationStatus.Pending
+                        || reservation.Status == ResourceReservationStatus.Confirmed))
+                .ToListAsync(cancellationToken);
+
+            foreach (var reservation in activeReservations)
+            {
+                reservation.Cancel(now);
+            }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
