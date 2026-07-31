@@ -22,6 +22,10 @@ namespace EventOrganizer.Application.Commands.CreateResource
                 request.Name,
                 request.Description,
                 request.Type,
+                request.Cost,
+                request.Capacity,
+                request.Area,
+                request.QualityScore,
                 DateTime.UtcNow);
 
             _dbContext.Resources.Add(resource);

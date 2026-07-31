@@ -18,6 +18,13 @@ namespace EventOrganizer.Application.Commands.CreateEvent
 
             RuleFor(command => command.Capacity)
                 .GreaterThan(0);
+
+            RuleFor(command => command.Budget)
+                .GreaterThan(0);
+
+            RuleFor(command => command.Area)
+                .NotEmpty()
+                .MaximumLength(100);
         }
     }
 }

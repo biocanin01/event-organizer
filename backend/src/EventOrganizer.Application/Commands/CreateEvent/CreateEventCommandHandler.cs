@@ -31,6 +31,8 @@ namespace EventOrganizer.Application.Commands.CreateEvent
                 request.StartsAtUtc,
                 request.EndsAtUtc,
                 request.Capacity,
+                request.Budget,
+                request.Area,
                 _currentUserService.UserId.Value,
                 DateTime.UtcNow);
 

@@ -33,6 +33,10 @@ namespace EventOrganizer.Application.Commands.UpdateResource
             resource.UpdateDetails(
                 request.Name,
                 request.Description,
+                request.Cost,
+                request.Capacity,
+                request.Area,
+                request.QualityScore,
                 DateTime.UtcNow);
 
             await _dbContext.SaveChangesAsync(cancellationToken);

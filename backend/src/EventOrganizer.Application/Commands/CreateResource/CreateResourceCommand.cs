@@ -6,5 +6,9 @@ namespace EventOrganizer.Application.Commands.CreateResource
     public sealed record CreateResourceCommand(
         string Name,
         string Description,
-        ResourceType Type) : IRequest<Guid>;
+        ResourceType Type,
+        decimal Cost,
+        int? Capacity,
+        string? Area,
+        int QualityScore) : IRequest<Guid>;
 }

@@ -7,5 +7,7 @@ namespace EventOrganizer.Application.Commands.CreateEvent
         string Description,
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
-        int Capacity) : IRequest<Guid>;
+        int Capacity,
+        decimal Budget,
+        string Area) : IRequest<Guid>;
 }
