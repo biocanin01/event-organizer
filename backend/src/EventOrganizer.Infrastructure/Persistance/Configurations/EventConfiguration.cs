@@ -31,6 +31,14 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
             builder.Property(e => e.Capacity)
                 .IsRequired();
 
+            builder.Property(e => e.Budget)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            builder.Property(e => e.Area)
+                .HasMaxLength(100)
+                .IsRequired();
+
             builder.Property(e => e.OrganizerUserId)
                 .IsRequired();
 
@@ -45,6 +53,7 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
             builder.HasIndex(e => e.OrganizerUserId);
             builder.HasIndex(e => e.Status);
             builder.HasIndex(e => e.StartsAtUtc);
+            builder.HasIndex(e => e.Area);
         }
     }
 }

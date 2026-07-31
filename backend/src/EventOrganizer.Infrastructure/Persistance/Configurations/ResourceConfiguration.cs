@@ -26,11 +26,24 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
                 .HasMaxLength(50)
                 .IsRequired();
 
+            builder.Property(resource => resource.Cost)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            builder.Property(resource => resource.Capacity);
+
+            builder.Property(resource => resource.Area)
+                .HasMaxLength(100);
+
+            builder.Property(resource => resource.QualityScore)
+                .IsRequired();
+
             builder.Property(resource => resource.CreatedAtUtc)
                 .IsRequired();
 
             builder.HasIndex(resource => resource.Type);
             builder.HasIndex(resource => resource.Status);
+            builder.HasIndex(resource => resource.Area);
         }
     }
 }
