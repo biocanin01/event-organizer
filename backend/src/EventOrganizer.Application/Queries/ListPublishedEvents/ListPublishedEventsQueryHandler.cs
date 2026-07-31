@@ -31,6 +31,8 @@ namespace EventOrganizer.Application.Queries.ListPublishedEvents
                     eventItem.StartsAtUtc,
                     eventItem.EndsAtUtc,
                     eventItem.Capacity,
+                    eventItem.Budget,
+                    eventItem.Area,
                     eventItem.OrganizerUserId,
                     eventItem.Status.ToString(),
                     eventItem.CreatedAtUtc,

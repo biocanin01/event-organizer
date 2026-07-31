@@ -7,6 +7,8 @@
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
         int Capacity,
+        decimal Budget,
+        string Area,
         Guid OrganizerUserId,
         string Status,
         DateTime CreatedAtUtc,

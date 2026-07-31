@@ -28,6 +28,10 @@ namespace EventOrganizer.Application.Queries.GetResourceById
                     resource.Description,
                     resource.Type.ToString(),
                     resource.Status.ToString(),
+                    resource.Cost,
+                    resource.Capacity,
+                    resource.Area,
+                    resource.QualityScore,
                     resource.CreatedAtUtc,
                     resource.UpdatedAtUtc))
                 .FirstOrDefaultAsync(cancellationToken);

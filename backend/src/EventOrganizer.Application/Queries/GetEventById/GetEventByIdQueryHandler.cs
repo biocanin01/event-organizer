@@ -27,6 +27,8 @@ namespace EventOrganizer.Application.Queries.GetEventById
                     eventItem.StartsAtUtc,
                     eventItem.EndsAtUtc,
                     eventItem.Capacity,
+                    eventItem.Budget,
+                    eventItem.Area,
                     eventItem.OrganizerUserId,
                     eventItem.Status.ToString(),
                     eventItem.CreatedAtUtc,

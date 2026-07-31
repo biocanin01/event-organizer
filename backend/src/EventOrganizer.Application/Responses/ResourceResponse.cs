@@ -6,6 +6,10 @@ namespace EventOrganizer.Application.Responses
         string Description,
         string Type,
         string Status,
+        decimal Cost,
+        int? Capacity,
+        string? Area,
+        int QualityScore,
         DateTime CreatedAtUtc,
         DateTime? UpdatedAtUtc);
 }
