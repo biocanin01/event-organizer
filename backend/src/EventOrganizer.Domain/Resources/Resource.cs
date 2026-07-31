@@ -9,12 +9,20 @@ namespace EventOrganizer.Domain.Resources
             string name,
             string description,
             ResourceType type,
+            decimal cost,
+            int? capacity,
+            string? area,
+            int qualityScore,
             DateTime createdAtUtc)
         {
             Id = id;
             Name = name;
             Description = description;
             Type = type;
+            Cost = cost;
+            Capacity = capacity;
+            Area = NormalizeArea(area);
+            QualityScore = qualityScore;
             Status = ResourceStatus.Available;
             CreatedAtUtc = createdAtUtc;
         }
@@ -29,6 +37,14 @@ namespace EventOrganizer.Domain.Resources
 
         public ResourceStatus Status { get; private set; }
 
+        public decimal Cost { get; private set; }
+
+        public int? Capacity { get; private set; }
+
+        public string? Area { get; private set; }
+
+        public int QualityScore { get; private set; }
+
         public DateTime CreatedAtUtc { get; private set; }
 
         public DateTime? UpdatedAtUtc { get; private set; }
@@ -37,25 +53,50 @@ namespace EventOrganizer.Domain.Resources
             string name,
             string description,
             ResourceType type,
+            decimal cost,
+            int? capacity,
+            string? area,
+            int qualityScore,
             DateTime createdAtUtc)
         {
             ValidateName(name);
+            ValidateCost(cost);
+            ValidateCapacity(capacity);
+            ValidateQualityScore(qualityScore);
 
             return new Resource(
                 Guid.NewGuid(),
                 name.Trim(),
                 description.Trim(),
                 type,
+                cost,
+                capacity,
+                area,
+                qualityScore,
                 createdAtUtc);
         }
 
-        public void UpdateDetails(string name, string description, DateTime updatedAtUtc)
+        public void UpdateDetails(
+            string name,
+            string description,
+            decimal cost,
+            int? capacity,
+            string? area,
+            int qualityScore,
+            DateTime updatedAtUtc)
         {
             EnsureNotArchived();
             ValidateName(name);
+            ValidateCost(cost);
+            ValidateCapacity(capacity);
+            ValidateQualityScore(qualityScore);
 
             Name = name.Trim();
             Description = description.Trim();
+            Cost = cost;
+            Capacity = capacity;
+            Area = NormalizeArea(area);
+            QualityScore = qualityScore;
             UpdatedAtUtc = updatedAtUtc;
         }
 
@@ -93,6 +134,37 @@ namespace EventOrganizer.Domain.Resources
             {
                 throw new ArgumentException("Resource name is required.", nameof(name));
             }
+        }
+
+        private static void ValidateCost(decimal cost)
+        {
+            if (cost < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cost), "Resource cost cannot be negative.");
+            }
+        }
+
+        private static void ValidateCapacity(int? capacity)
+        {
+            if (capacity.HasValue && capacity.Value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Resource capacity must be positive.");
+            }
+        }
+
+        private static void ValidateQualityScore(int qualityScore)
+        {
+            if (qualityScore is < 1 or > 5)
+            {
+                throw new ArgumentOutOfRangeException(nameof(qualityScore), "Resource quality score must be between 1 and 5.");
+            }
+        }
+
+        private static string? NormalizeArea(string? area)
+        {
+            return string.IsNullOrWhiteSpace(area)
+                ? null
+                : area.Trim();
         }
     }
 }
