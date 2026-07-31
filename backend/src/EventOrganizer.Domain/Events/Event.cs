@@ -11,6 +11,8 @@ namespace EventOrganizer.Domain.Events
             DateTime startsAtUtc,
             DateTime endsAtUtc,
             int capacity,
+            decimal budget,
+            string area,
             Guid organizerUserId,
             DateTime createdAtUtc)
         {
@@ -20,6 +22,8 @@ namespace EventOrganizer.Domain.Events
             StartsAtUtc = startsAtUtc;
             EndsAtUtc = endsAtUtc;
             Capacity = capacity;
+            Budget = budget;
+            Area = area;
             OrganizerUserId = organizerUserId;
             Status = EventStatus.Draft;
             CreatedAtUtc = createdAtUtc;
@@ -37,6 +41,10 @@ namespace EventOrganizer.Domain.Events
 
         public int Capacity { get; private set; }
 
+        public decimal Budget { get; private set; }
+
+        public string Area { get; private set; } = string.Empty;
+
         public Guid OrganizerUserId { get; private set; }
 
         public EventStatus Status { get; private set; }
@@ -51,12 +59,16 @@ namespace EventOrganizer.Domain.Events
             DateTime startsAtUtc,
             DateTime endsAtUtc,
             int capacity,
+            decimal budget,
+            string area,
             Guid organizerUserId,
             DateTime createdAtUtc)
         {
             ValidateTitle(title);
             ValidateSchedule(startsAtUtc, endsAtUtc);
             ValidateCapacity(capacity);
+            ValidateBudget(budget);
+            ValidateArea(area);
 
             if (organizerUserId == Guid.Empty)
             {
@@ -70,6 +82,8 @@ namespace EventOrganizer.Domain.Events
                 startsAtUtc,
                 endsAtUtc,
                 capacity,
+                budget,
+                area.Trim(),
                 organizerUserId,
                 createdAtUtc);
         }
@@ -80,18 +94,24 @@ namespace EventOrganizer.Domain.Events
             DateTime startsAtUtc,
             DateTime endsAtUtc,
             int capacity,
+            decimal budget,
+            string area,
             DateTime updatedAtUtc)
         {
             EnsureEditable();
             ValidateTitle(title);
             ValidateSchedule(startsAtUtc, endsAtUtc);
             ValidateCapacity(capacity);
+            ValidateBudget(budget);
+            ValidateArea(area);
 
             Title = title.Trim();
             Description = description.Trim();
             StartsAtUtc = startsAtUtc;
             EndsAtUtc = endsAtUtc;
             Capacity = capacity;
+            Budget = budget;
+            Area = area.Trim();
             UpdatedAtUtc = updatedAtUtc;
         }
 
@@ -157,6 +177,22 @@ namespace EventOrganizer.Domain.Events
             if (capacity <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity), "Event capacity must be positive.");
+            }
+        }
+
+        private static void ValidateBudget(decimal budget)
+        {
+            if (budget <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(budget), "Event budget must be positive.");
+            }
+        }
+
+        private static void ValidateArea(string area)
+        {
+            if (string.IsNullOrWhiteSpace(area))
+            {
+                throw new ArgumentException("Event area is required.", nameof(area));
             }
         }
     }
