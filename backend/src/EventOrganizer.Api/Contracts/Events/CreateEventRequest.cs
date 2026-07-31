@@ -5,5 +5,7 @@
         string Description,
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
-        int Capacity);
+        int Capacity,
+        decimal Budget,
+        string Area);
 }

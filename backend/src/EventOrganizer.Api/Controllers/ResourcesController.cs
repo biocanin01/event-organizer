@@ -74,7 +74,11 @@ namespace EventOrganizer.Api.Controllers
                 new CreateResourceCommand(
                     request.Name,
                     request.Description,
-                    request.Type),
+                    request.Type,
+                    request.Cost,
+                    request.Capacity,
+                    request.Area,
+                    request.QualityScore),
                 cancellationToken);
 
             return StatusCode(
@@ -97,7 +101,11 @@ namespace EventOrganizer.Api.Controllers
                 new UpdateResourceCommand(
                     id,
                     request.Name,
-                    request.Description),
+                    request.Description,
+                    request.Cost,
+                    request.Capacity,
+                    request.Area,
+                    request.QualityScore),
                 cancellationToken);
 
             return NoContent();

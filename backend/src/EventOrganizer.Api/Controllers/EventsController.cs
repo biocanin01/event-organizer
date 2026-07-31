@@ -64,7 +64,9 @@ namespace EventOrganizer.Api.Controllers
                 request.Description,
                 request.StartsAtUtc,
                 request.EndsAtUtc,
-                request.Capacity);
+                request.Capacity,
+                request.Budget,
+                request.Area);
 
             var eventId = await _sender.Send(command, cancellationToken);
 
