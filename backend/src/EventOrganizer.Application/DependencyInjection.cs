@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Behaviors;
+using EventOrganizer.Application.Recommendations.Candidates;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,8 @@ namespace EventOrganizer.Application
             services.AddScoped<EventAuthorizationService>();
 
             services.AddScoped<ResourceReservationAuthorizationService>();
+
+            services.AddScoped<IResourceCandidateProvider, ResourceCandidateProvider>();
 
             return services;
         }
