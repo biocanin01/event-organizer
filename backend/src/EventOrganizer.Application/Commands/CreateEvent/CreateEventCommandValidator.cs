@@ -25,6 +25,9 @@ namespace EventOrganizer.Application.Commands.CreateEvent
             RuleFor(command => command.Area)
                 .NotEmpty()
                 .MaximumLength(100);
+
+            RuleFor(command => command.RequiredSpeakerCount)
+                .GreaterThan(0);
         }
     }
 }

@@ -7,5 +7,6 @@
         DateTime EndsAtUtc,
         int Capacity,
         decimal Budget,
-        string Area);
+        string Area,
+        int RequiredSpeakerCount);
 }

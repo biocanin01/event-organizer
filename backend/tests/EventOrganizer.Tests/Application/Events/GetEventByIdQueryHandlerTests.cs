@@ -17,6 +17,7 @@ namespace EventOrganizer.Tests.Application.Events
             Assert.NotNull(result);
             Assert.Equal(eventItem.Id, result.Id);
             Assert.Equal(eventItem.Title, result.Title);
+            Assert.Equal(eventItem.RequiredSpeakerCount, result.RequiredSpeakerCount);
             Assert.Equal(eventItem.Status.ToString(), result.Status);
         }
 

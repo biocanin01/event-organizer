@@ -61,6 +61,7 @@ namespace EventOrganizer.Tests.Application
                 80,
                 1000m,
                 "IT",
+                1,
                 resolvedOrganizerUserId,
                 new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
 

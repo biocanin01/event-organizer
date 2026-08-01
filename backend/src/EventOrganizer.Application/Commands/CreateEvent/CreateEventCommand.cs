@@ -9,5 +9,6 @@ namespace EventOrganizer.Application.Commands.CreateEvent
         DateTime EndsAtUtc,
         int Capacity,
         decimal Budget,
-        string Area) : IRequest<Guid>;
+        string Area,
+        int RequiredSpeakerCount) : IRequest<Guid>;
 }

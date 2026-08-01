@@ -117,7 +117,8 @@ namespace EventOrganizer.Tests.Api
                 new DateTime(2026, 9, 1, 13, 0, 0, DateTimeKind.Utc),
                 80,
                 1000m,
-                "IT");
+                "IT",
+                1);
         }
     }
 }

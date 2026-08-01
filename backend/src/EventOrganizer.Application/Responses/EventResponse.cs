@@ -9,6 +9,7 @@
         int Capacity,
         decimal Budget,
         string Area,
+        int RequiredSpeakerCount,
         Guid OrganizerUserId,
         string Status,
         DateTime CreatedAtUtc,

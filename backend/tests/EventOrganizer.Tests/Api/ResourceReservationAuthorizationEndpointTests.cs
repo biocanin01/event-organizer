@@ -236,6 +236,7 @@ namespace EventOrganizer.Tests.Api
                 80,
                 1000m,
                 "IT",
+                1,
                 resolvedOrganizerUserId,
                 DateTime.UtcNow);
 

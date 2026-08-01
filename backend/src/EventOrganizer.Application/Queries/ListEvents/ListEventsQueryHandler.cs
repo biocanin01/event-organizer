@@ -29,6 +29,7 @@ namespace EventOrganizer.Application.Queries.ListEvents
                     eventItem.Capacity,
                     eventItem.Budget,
                     eventItem.Area,
+                    eventItem.RequiredSpeakerCount,
                     eventItem.OrganizerUserId,
                     eventItem.Status.ToString(),
                     eventItem.CreatedAtUtc,

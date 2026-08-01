@@ -24,7 +24,8 @@ namespace EventOrganizer.Tests.Application
                 new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc),
                 0,
                 0m,
-                "");
+                "",
+                0);
 
             Task<Guid> Next(CancellationToken cancellationToken)
             {
@@ -58,7 +59,8 @@ namespace EventOrganizer.Tests.Application
                 startsAtUtc.AddHours(4),
                 80,
                 1000m,
-                "IT");
+                "IT",
+                1);
 
             Task<Guid> Next(CancellationToken cancellationToken)
             {

@@ -24,7 +24,8 @@ namespace EventOrganizer.Tests.Application.Events
                 startsAtUtc.AddHours(4),
                 80,
                 1000m,
-                "IT");
+                "IT",
+                2);
 
             var eventId = await handler.Handle(command, CancellationToken.None);
 
@@ -37,6 +38,7 @@ namespace EventOrganizer.Tests.Application.Events
             Assert.Equal(command.Capacity, eventItem.Capacity);
             Assert.Equal(command.Budget, eventItem.Budget);
             Assert.Equal(command.Area, eventItem.Area);
+            Assert.Equal(command.RequiredSpeakerCount, eventItem.RequiredSpeakerCount);
             Assert.Equal(organizerUserId, eventItem.OrganizerUserId);
             Assert.Equal(EventStatus.Draft, eventItem.Status);
         }
@@ -56,7 +58,8 @@ namespace EventOrganizer.Tests.Application.Events
                 startsAtUtc.AddHours(4),
                 80,
                 1000m,
-                "IT");
+                "IT",
+                1);
 
             await Assert.ThrowsAsync<UnauthorizedException>(() =>
                 handler.Handle(command, CancellationToken.None));

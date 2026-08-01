@@ -20,6 +20,7 @@ public sealed class EventTests
             80,
             1000m,
             "IT",
+            2,
             organizerUserId,
             createdAtUtc);
 
@@ -27,6 +28,7 @@ public sealed class EventTests
         Assert.Equal("Software Architecture Seminar", eventItem.Title);
         Assert.Equal(1000m, eventItem.Budget);
         Assert.Equal("IT", eventItem.Area);
+        Assert.Equal(2, eventItem.RequiredSpeakerCount);
         Assert.Equal(EventStatus.Draft, eventItem.Status);
         Assert.Equal(organizerUserId, eventItem.OrganizerUserId);
         Assert.Equal(createdAtUtc, eventItem.CreatedAtUtc);
@@ -45,6 +47,7 @@ public sealed class EventTests
             50,
             1000m,
             "IT",
+            1,
             Guid.NewGuid(),
             DateTime.UtcNow);
 
@@ -66,6 +69,7 @@ public sealed class EventTests
             capacity,
             1000m,
             "IT",
+            1,
             Guid.NewGuid(),
             DateTime.UtcNow);
 
@@ -87,6 +91,7 @@ public sealed class EventTests
             50,
             budget,
             "IT",
+            1,
             Guid.NewGuid(),
             DateTime.UtcNow);
 
@@ -106,10 +111,33 @@ public sealed class EventTests
             50,
             1000m,
             "",
+            1,
             Guid.NewGuid(),
             DateTime.UtcNow);
 
         Assert.Throws<ArgumentException>(act);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Create_WhenRequiredSpeakerCountIsNotPositive_Throws(int requiredSpeakerCount)
+    {
+        var startsAtUtc = new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
+
+        var act = () => Event.Create(
+            "Invalid event",
+            "Invalid required speaker count.",
+            startsAtUtc,
+            startsAtUtc.AddHours(2),
+            50,
+            1000m,
+            "IT",
+            requiredSpeakerCount,
+            Guid.NewGuid(),
+            DateTime.UtcNow);
+
+        Assert.Throws<ArgumentOutOfRangeException>(act);
     }
 
     [Fact]
@@ -147,6 +175,7 @@ public sealed class EventTests
             80,
             1000m,
             "IT",
+            1,
             Guid.NewGuid(),
             new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
     }

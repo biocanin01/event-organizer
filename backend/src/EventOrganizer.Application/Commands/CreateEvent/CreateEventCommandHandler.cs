@@ -33,6 +33,7 @@ namespace EventOrganizer.Application.Commands.CreateEvent
                 request.Capacity,
                 request.Budget,
                 request.Area,
+                request.RequiredSpeakerCount,
                 _currentUserService.UserId.Value,
                 DateTime.UtcNow);
 

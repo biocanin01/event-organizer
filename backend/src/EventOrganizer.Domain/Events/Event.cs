@@ -13,6 +13,7 @@ namespace EventOrganizer.Domain.Events
             int capacity,
             decimal budget,
             string area,
+            int requiredSpeakerCount,
             Guid organizerUserId,
             DateTime createdAtUtc)
         {
@@ -24,6 +25,7 @@ namespace EventOrganizer.Domain.Events
             Capacity = capacity;
             Budget = budget;
             Area = area;
+            RequiredSpeakerCount = requiredSpeakerCount;
             OrganizerUserId = organizerUserId;
             Status = EventStatus.Draft;
             CreatedAtUtc = createdAtUtc;
@@ -45,6 +47,8 @@ namespace EventOrganizer.Domain.Events
 
         public string Area { get; private set; } = string.Empty;
 
+        public int RequiredSpeakerCount { get; private set; }
+
         public Guid OrganizerUserId { get; private set; }
 
         public EventStatus Status { get; private set; }
@@ -61,6 +65,7 @@ namespace EventOrganizer.Domain.Events
             int capacity,
             decimal budget,
             string area,
+            int requiredSpeakerCount,
             Guid organizerUserId,
             DateTime createdAtUtc)
         {
@@ -69,6 +74,7 @@ namespace EventOrganizer.Domain.Events
             ValidateCapacity(capacity);
             ValidateBudget(budget);
             ValidateArea(area);
+            ValidateRequiredSpeakerCount(requiredSpeakerCount);
 
             if (organizerUserId == Guid.Empty)
             {
@@ -84,6 +90,7 @@ namespace EventOrganizer.Domain.Events
                 capacity,
                 budget,
                 area.Trim(),
+                requiredSpeakerCount,
                 organizerUserId,
                 createdAtUtc);
         }
@@ -96,6 +103,7 @@ namespace EventOrganizer.Domain.Events
             int capacity,
             decimal budget,
             string area,
+            int requiredSpeakerCount,
             DateTime updatedAtUtc)
         {
             EnsureEditable();
@@ -104,6 +112,7 @@ namespace EventOrganizer.Domain.Events
             ValidateCapacity(capacity);
             ValidateBudget(budget);
             ValidateArea(area);
+            ValidateRequiredSpeakerCount(requiredSpeakerCount);
 
             Title = title.Trim();
             Description = description.Trim();
@@ -112,6 +121,7 @@ namespace EventOrganizer.Domain.Events
             Capacity = capacity;
             Budget = budget;
             Area = area.Trim();
+            RequiredSpeakerCount = requiredSpeakerCount;
             UpdatedAtUtc = updatedAtUtc;
         }
 
@@ -193,6 +203,16 @@ namespace EventOrganizer.Domain.Events
             if (string.IsNullOrWhiteSpace(area))
             {
                 throw new ArgumentException("Event area is required.", nameof(area));
+            }
+        }
+
+        private static void ValidateRequiredSpeakerCount(int requiredSpeakerCount)
+        {
+            if (requiredSpeakerCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(requiredSpeakerCount),
+                    "Required speaker count must be positive.");
             }
         }
     }
