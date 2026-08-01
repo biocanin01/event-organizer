@@ -13,7 +13,11 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new CreateResourceCommand(
                 "Projector",
                 "4K presentation projector.",
-                ResourceType.Equipment);
+                ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                3);
 
             var result = _validator.Validate(command);
 
@@ -26,7 +30,11 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new CreateResourceCommand(
                 "",
                 "4K presentation projector.",
-                ResourceType.Equipment);
+                ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                3);
 
             var result = _validator.Validate(command);
 
@@ -41,7 +49,11 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new CreateResourceCommand(
                 new string('a', 201),
                 "4K presentation projector.",
-                ResourceType.Equipment);
+                ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                3);
 
             var result = _validator.Validate(command);
 
@@ -56,7 +68,11 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new CreateResourceCommand(
                 "Projector",
                 new string('a', 2001),
-                ResourceType.Equipment);
+                ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                3);
 
             var result = _validator.Validate(command);
 
@@ -71,13 +87,76 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new CreateResourceCommand(
                 "Projector",
                 "4K presentation projector.",
-                (ResourceType)99);
+                (ResourceType)99,
+                100m,
+                null,
+                null,
+                3);
 
             var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
                 error.PropertyName == nameof(CreateResourceCommand.Type));
+        }
+
+        [Fact]
+        public void Validate_WithNegativeCost_IsInvalid()
+        {
+            var command = new CreateResourceCommand(
+                "Projector",
+                "4K presentation projector.",
+                ResourceType.Equipment,
+                -1m,
+                null,
+                null,
+                3);
+
+            var result = _validator.Validate(command);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error =>
+                error.PropertyName == nameof(CreateResourceCommand.Cost));
+        }
+
+        [Fact]
+        public void Validate_WithNonPositiveCapacity_IsInvalid()
+        {
+            var command = new CreateResourceCommand(
+                "Main Conference Hall",
+                "A hall suitable for conferences.",
+                ResourceType.Venue,
+                500m,
+                0,
+                "IT",
+                3);
+
+            var result = _validator.Validate(command);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error =>
+                error.PropertyName == nameof(CreateResourceCommand.Capacity));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(6)]
+        public void Validate_WithQualityScoreOutsideRange_IsInvalid(int qualityScore)
+        {
+            var command = new CreateResourceCommand(
+                "Projector",
+                "4K presentation projector.",
+                ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                qualityScore);
+
+            var result = _validator.Validate(command);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error =>
+                error.PropertyName == nameof(CreateResourceCommand.QualityScore));
         }
     }
 }

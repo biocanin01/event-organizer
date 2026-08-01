@@ -13,7 +13,11 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new CreateResourceCommand(
                 "Main Conference Hall",
                 "A hall suitable for conferences with up to 200 participants.",
-                ResourceType.Venue);
+                ResourceType.Venue,
+                500m,
+                200,
+                "IT",
+                4);
 
             var resourceId = await handler.Handle(command, CancellationToken.None);
 
@@ -24,6 +28,10 @@ namespace EventOrganizer.Tests.Application.Resources
             Assert.Equal(command.Name, resource.Name);
             Assert.Equal(command.Description, resource.Description);
             Assert.Equal(command.Type, resource.Type);
+            Assert.Equal(command.Cost, resource.Cost);
+            Assert.Equal(command.Capacity, resource.Capacity);
+            Assert.Equal(command.Area, resource.Area);
+            Assert.Equal(command.QualityScore, resource.QualityScore);
             Assert.Equal(ResourceStatus.Available, resource.Status);
             Assert.NotEqual(Guid.Empty, resourceId);
             Assert.NotEqual(default, resource.CreatedAtUtc);

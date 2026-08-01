@@ -15,7 +15,11 @@ namespace EventOrganizer.Tests.Application.Resources
             var command = new UpdateResourceCommand(
                 resource.Id,
                 "Main Conference Hall",
-                "A hall suitable for conferences with up to 200 participants.");
+                "A hall suitable for conferences with up to 200 participants.",
+                650m,
+                200,
+                "IT",
+                5);
 
             await handler.Handle(command, CancellationToken.None);
 
@@ -26,6 +30,10 @@ namespace EventOrganizer.Tests.Application.Resources
 
             Assert.Equal(command.Name, updatedResource.Name);
             Assert.Equal(command.Description, updatedResource.Description);
+            Assert.Equal(command.Cost, updatedResource.Cost);
+            Assert.Equal(command.Capacity, updatedResource.Capacity);
+            Assert.Equal(command.Area, updatedResource.Area);
+            Assert.Equal(command.QualityScore, updatedResource.QualityScore);
             Assert.NotNull(updatedResource.UpdatedAtUtc);
         }
 
@@ -38,7 +46,11 @@ namespace EventOrganizer.Tests.Application.Resources
                 new UpdateResourceCommand(
                     Guid.NewGuid(),
                     "Main Conference Hall",
-                    "A hall suitable for conferences with up to 200 participants."),
+                    "A hall suitable for conferences with up to 200 participants.",
+                    650m,
+                    200,
+                    "IT",
+                    5),
                 CancellationToken.None);
 
             await Assert.ThrowsAsync<NotFoundException>(action);
@@ -57,7 +69,11 @@ namespace EventOrganizer.Tests.Application.Resources
                 new UpdateResourceCommand(
                     resource.Id,
                     "Main Conference Hall",
-                    "A hall suitable for conferences with up to 200 participants."),
+                    "A hall suitable for conferences with up to 200 participants.",
+                    650m,
+                    200,
+                    "IT",
+                    5),
                 CancellationToken.None);
 
             await Assert.ThrowsAsync<InvalidOperationException>(action);
@@ -69,6 +85,10 @@ namespace EventOrganizer.Tests.Application.Resources
                 "Conference Hall",
                 "Main conference hall.",
                 ResourceType.Venue,
+                500m,
+                150,
+                "IT",
+                4,
                 DateTime.UtcNow);
 
             DbContext.Resources.Add(resource);

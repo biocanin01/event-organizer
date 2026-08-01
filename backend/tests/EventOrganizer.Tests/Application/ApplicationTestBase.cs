@@ -59,6 +59,8 @@ namespace EventOrganizer.Tests.Application
                 resolvedStartsAtUtc,
                 resolvedStartsAtUtc.AddHours(4),
                 80,
+                1000m,
+                "IT",
                 resolvedOrganizerUserId,
                 new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
 

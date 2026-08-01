@@ -41,6 +41,10 @@ namespace EventOrganizer.Tests.Application.Resources
                 "Main Conference Hall",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,
+                500m,
+                150,
+                "IT",
+                4,
                 DateTime.UtcNow);
 
             var reservation = ResourceReservation.Create(

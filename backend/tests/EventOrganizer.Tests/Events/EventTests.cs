@@ -18,11 +18,15 @@ public sealed class EventTests
             startsAtUtc,
             endsAtUtc,
             80,
+            1000m,
+            "IT",
             organizerUserId,
             createdAtUtc);
 
         Assert.NotEqual(Guid.Empty, eventItem.Id);
         Assert.Equal("Software Architecture Seminar", eventItem.Title);
+        Assert.Equal(1000m, eventItem.Budget);
+        Assert.Equal("IT", eventItem.Area);
         Assert.Equal(EventStatus.Draft, eventItem.Status);
         Assert.Equal(organizerUserId, eventItem.OrganizerUserId);
         Assert.Equal(createdAtUtc, eventItem.CreatedAtUtc);
@@ -39,6 +43,8 @@ public sealed class EventTests
             startsAtUtc,
             startsAtUtc.AddMinutes(-1),
             50,
+            1000m,
+            "IT",
             Guid.NewGuid(),
             DateTime.UtcNow);
 
@@ -58,10 +64,52 @@ public sealed class EventTests
             startsAtUtc,
             startsAtUtc.AddHours(2),
             capacity,
+            1000m,
+            "IT",
             Guid.NewGuid(),
             DateTime.UtcNow);
 
         Assert.Throws<ArgumentOutOfRangeException>(act);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Create_WhenBudgetIsNotPositive_Throws(decimal budget)
+    {
+        var startsAtUtc = new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
+
+        var act = () => Event.Create(
+            "Invalid event",
+            "Invalid budget.",
+            startsAtUtc,
+            startsAtUtc.AddHours(2),
+            50,
+            budget,
+            "IT",
+            Guid.NewGuid(),
+            DateTime.UtcNow);
+
+        Assert.Throws<ArgumentOutOfRangeException>(act);
+    }
+
+    [Fact]
+    public void Create_WhenAreaIsEmpty_Throws()
+    {
+        var startsAtUtc = new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
+
+        var act = () => Event.Create(
+            "Invalid event",
+            "Invalid area.",
+            startsAtUtc,
+            startsAtUtc.AddHours(2),
+            50,
+            1000m,
+            "",
+            Guid.NewGuid(),
+            DateTime.UtcNow);
+
+        Assert.Throws<ArgumentException>(act);
     }
 
     [Fact]
@@ -97,6 +145,8 @@ public sealed class EventTests
             startsAtUtc,
             startsAtUtc.AddHours(4),
             80,
+            1000m,
+            "IT",
             Guid.NewGuid(),
             new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
     }

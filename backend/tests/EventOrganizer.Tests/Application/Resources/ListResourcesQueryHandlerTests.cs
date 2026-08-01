@@ -12,12 +12,20 @@ namespace EventOrganizer.Tests.Application.Resources
                 "Projector",
                 "4K projector.",
                 ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                3,
                 DateTime.UtcNow);
 
             var hall = Resource.Create(
                 "Conference Hall",
                 "Main conference hall.",
                 ResourceType.Venue,
+                500m,
+                150,
+                "IT",
+                4,
                 DateTime.UtcNow);
 
             DbContext.Resources.AddRange(projector, hall);
@@ -32,6 +40,8 @@ namespace EventOrganizer.Tests.Application.Resources
             Assert.Equal(2, result.Count);
             Assert.Equal(hall.Id, result[0].Id);
             Assert.Equal(projector.Id, result[1].Id);
+            Assert.Equal(hall.Cost, result[0].Cost);
+            Assert.Equal(projector.QualityScore, result[1].QualityScore);
         }
     }
 }

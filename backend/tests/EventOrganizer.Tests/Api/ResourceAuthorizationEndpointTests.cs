@@ -116,7 +116,11 @@ namespace EventOrganizer.Tests.Api
             return new CreateResourceRequest(
                 "Main Conference Hall",
                 "A hall suitable for conferences with up to 200 participants.",
-                ResourceType.Venue);
+                ResourceType.Venue,
+                500m,
+                200,
+                "IT",
+                4);
         }
     }
 }

@@ -115,7 +115,9 @@ namespace EventOrganizer.Tests.Api
                 "Professional event about backend architecture.",
                 new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 9, 1, 13, 0, 0, DateTimeKind.Utc),
-                80);
+                80,
+                1000m,
+                "IT");
         }
     }
 }

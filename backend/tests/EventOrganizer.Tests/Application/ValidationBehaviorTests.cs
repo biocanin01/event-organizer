@@ -22,7 +22,9 @@ namespace EventOrganizer.Tests.Application
                 "Invalid event.",
                 new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc),
-                0);
+                0,
+                0m,
+                "");
 
             Task<Guid> Next(CancellationToken cancellationToken)
             {
@@ -54,7 +56,9 @@ namespace EventOrganizer.Tests.Application
                 "Valid event.",
                 startsAtUtc,
                 startsAtUtc.AddHours(4),
-                80);
+                80,
+                1000m,
+                "IT");
 
             Task<Guid> Next(CancellationToken cancellationToken)
             {

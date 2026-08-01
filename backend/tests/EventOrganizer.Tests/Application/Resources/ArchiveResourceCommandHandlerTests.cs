@@ -88,6 +88,10 @@ namespace EventOrganizer.Tests.Application.Resources
                 "Projector",
                 "Conference room projector.",
                 ResourceType.Equipment,
+                100m,
+                null,
+                null,
+                3,
                 DateTime.UtcNow);
 
             DbContext.Resources.Add(resource);

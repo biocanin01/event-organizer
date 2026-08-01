@@ -234,6 +234,8 @@ namespace EventOrganizer.Tests.Api
                 new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 9, 1, 13, 0, 0, DateTimeKind.Utc),
                 80,
+                1000m,
+                "IT",
                 resolvedOrganizerUserId,
                 DateTime.UtcNow);
 
@@ -241,6 +243,10 @@ namespace EventOrganizer.Tests.Api
                 $"Conference Hall {Guid.NewGuid():N}",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,
+                500m,
+                150,
+                "IT",
+                4,
                 DateTime.UtcNow);
 
             dbContext.Events.Add(eventItem);

@@ -12,6 +12,10 @@ namespace EventOrganizer.Tests.Application.Resources
                 "Conference Hall",
                 "Main conference hall.",
                 ResourceType.Venue,
+                500m,
+                150,
+                "IT",
+                4,
                 DateTime.UtcNow);
 
             DbContext.Resources.Add(resource);
@@ -28,6 +32,10 @@ namespace EventOrganizer.Tests.Application.Resources
             Assert.Equal(resource.Name, result.Name);
             Assert.Equal(resource.Type.ToString(), result.Type);
             Assert.Equal(resource.Status.ToString(), result.Status);
+            Assert.Equal(resource.Cost, result.Cost);
+            Assert.Equal(resource.Capacity, result.Capacity);
+            Assert.Equal(resource.Area, result.Area);
+            Assert.Equal(resource.QualityScore, result.QualityScore);
         }
 
         [Fact]
