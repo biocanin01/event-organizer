@@ -2,6 +2,7 @@ using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Resources;
+using EventOrganizer.Domain.Users;
 using EventOrganizer.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -20,6 +21,8 @@ namespace EventOrganizer.Infrastructure.Persistance
         public DbSet<ResourceReservation> ResourceReservations => Set<ResourceReservation>();
 
         public DbSet<Registration> Registrations => Set<Registration>();
+
+        public DbSet<OrganizerRoleRequest> OrganizerRoleRequests => Set<OrganizerRoleRequest>();
 
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 

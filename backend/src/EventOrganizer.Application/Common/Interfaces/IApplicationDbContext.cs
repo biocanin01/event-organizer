@@ -1,5 +1,6 @@
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Resources;
+using EventOrganizer.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Application.Common.Interfaces
@@ -11,6 +12,8 @@ namespace EventOrganizer.Application.Common.Interfaces
         DbSet<Resource> Resources { get; }
 
         DbSet<ResourceReservation> ResourceReservations { get; }
+
+        DbSet<OrganizerRoleRequest> OrganizerRoleRequests { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
