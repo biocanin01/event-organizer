@@ -6,5 +6,10 @@
             : base(message)
         {
         }
+
+        public ConflictException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 }
