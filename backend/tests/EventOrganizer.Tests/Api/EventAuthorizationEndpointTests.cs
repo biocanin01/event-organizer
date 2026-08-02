@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Api.Contracts.Events;
+using EventOrganizer.Domain.Resources;
 using EventOrganizer.Domain.Users;
 using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
@@ -77,6 +78,43 @@ namespace EventOrganizer.Tests.Api
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
+        [Fact]
+        public async Task GetRecommendation_WithoutAuthentication_ReturnsUnauthorized()
+        {
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync(
+                $"/api/events/{Guid.NewGuid()}/recommendation");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetRecommendation_WithParticipantRole_ReturnsForbidden()
+        {
+            var client = await CreateAuthenticatedClientAsync(ApplicationRoles.Participant);
+
+            var response = await client.GetAsync(
+                $"/api/events/{Guid.NewGuid()}/recommendation");
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetRecommendation_WithOrganizerRoleAndOwnEvent_ReturnsOk()
+        {
+            var organizerUserId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(
+                organizerUserId,
+                ApplicationRoles.Organizer);
+            var eventId = await CreateEventWithRecommendationResourcesAsync(organizerUserId);
+
+            var response = await client.GetAsync(
+                $"/api/events/{eventId}/recommendation");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
         private async Task<HttpClient> CreateAuthenticatedClientAsync(string role)
         {
             var client = _factory.CreateClient();
@@ -88,6 +126,65 @@ namespace EventOrganizer.Tests.Api
             client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role);
 
             return client;
+        }
+
+        private async Task<HttpClient> CreateAuthenticatedClientAsync(
+            Guid userId,
+            string role)
+        {
+            var client = _factory.CreateClient();
+
+            await CreateTestUserAsync(userId);
+
+            client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+            client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role);
+
+            return client;
+        }
+
+        private async Task<Guid> CreateEventWithRecommendationResourcesAsync(Guid organizerUserId)
+        {
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var startsAtUtc = new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
+
+            var eventItem = EventOrganizer.Domain.Events.Event.Create(
+                "Clean Architecture Seminar",
+                "Professional event about backend architecture.",
+                startsAtUtc,
+                startsAtUtc.AddHours(4),
+                80,
+                1000m,
+                "IT",
+                1,
+                organizerUserId,
+                DateTime.UtcNow);
+
+            var venue = Resource.Create(
+                $"Conference Hall {Guid.NewGuid():N}",
+                "A hall suitable for conferences.",
+                ResourceType.Venue,
+                300m,
+                120,
+                "IT",
+                5,
+                DateTime.UtcNow);
+
+            var speaker = Resource.Create(
+                $"Architecture Speaker {Guid.NewGuid():N}",
+                "A speaker for architecture events.",
+                ResourceType.Speaker,
+                200m,
+                null,
+                "IT",
+                5,
+                DateTime.UtcNow);
+
+            dbContext.Events.Add(eventItem);
+            dbContext.Resources.AddRange(venue, speaker);
+            await dbContext.SaveChangesAsync();
+
+            return eventItem.Id;
         }
 
         private async Task CreateTestUserAsync(Guid userId)

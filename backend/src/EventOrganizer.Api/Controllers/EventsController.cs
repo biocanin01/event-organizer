@@ -3,6 +3,7 @@ using EventOrganizer.Api.Contracts.Events;
 using EventOrganizer.Application.Commands.CancelEvent;
 using EventOrganizer.Application.Commands.CreateEvent;
 using EventOrganizer.Application.Commands.PublishEvent;
+using EventOrganizer.Application.Queries.GetEventRecommendation;
 using EventOrganizer.Application.Queries.GetPublishedEventById;
 using EventOrganizer.Application.Queries.ListPublishedEvents;
 using EventOrganizer.Application.Responses;
@@ -74,6 +75,23 @@ namespace EventOrganizer.Api.Controllers
             return StatusCode(
                 StatusCodes.Status201Created,
                 new CreateEventResponse(eventId));
+        }
+
+        [HttpGet("{id:guid}/recommendation")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventRecommendationResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<EventRecommendationResponse>> GetRecommendation(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            var recommendation = await _sender.Send(
+                new GetEventRecommendationQuery(id),
+                cancellationToken);
+
+            return Ok(recommendation);
         }
 
         [HttpPatch("{id:guid}/publish")]
