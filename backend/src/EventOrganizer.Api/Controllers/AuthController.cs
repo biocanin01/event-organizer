@@ -1,5 +1,6 @@
 using EventOrganizer.Api.Contracts.Auth;
 using EventOrganizer.Application.Commands.LoginUser;
+using EventOrganizer.Application.Commands.LogoutUser;
 using EventOrganizer.Application.Commands.RefreshToken;
 using EventOrganizer.Application.Commands.RegisterUser;
 using EventOrganizer.Application.Responses;
@@ -61,6 +62,20 @@ namespace EventOrganizer.Api.Controllers
             var response = await _sender.Send(command, cancellationToken);
 
             return Ok(response);
+        }
+
+        [HttpPost("logout")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Logout(
+            LogoutRequest request,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(
+                new LogoutUserCommand(request.RefreshToken),
+                cancellationToken);
+
+            return NoContent();
         }
     }
 }

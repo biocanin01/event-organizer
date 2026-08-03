@@ -10,13 +10,19 @@ namespace EventOrganizer.Application.Commands.SuspendUser
         : IRequestHandler<SuspendUserCommand>
     {
         private readonly ICurrentUserService _currentUserService;
+        private readonly IClientContextService _clientContextService;
+        private readonly IRefreshTokenRevocationService _refreshTokenRevocationService;
         private readonly IUserManagementService _userManagementService;
 
         public SuspendUserCommandHandler(
             ICurrentUserService currentUserService,
+            IClientContextService clientContextService,
+            IRefreshTokenRevocationService refreshTokenRevocationService,
             IUserManagementService userManagementService)
         {
             _currentUserService = currentUserService;
+            _clientContextService = clientContextService;
+            _refreshTokenRevocationService = refreshTokenRevocationService;
             _userManagementService = userManagementService;
         }
 
@@ -38,14 +44,17 @@ namespace EventOrganizer.Application.Commands.SuspendUser
 
             UserStatusManagementRules.EnsureCanChangeStatus(currentUserId, targetUser);
 
-            if (targetUser.Status == UserStatus.Suspended)
+            if (targetUser.Status != UserStatus.Suspended)
             {
-                return;
+                await _userManagementService.UpdateUserStatusAsync(
+                    request.UserId,
+                    UserStatus.Suspended,
+                    cancellationToken);
             }
 
-            await _userManagementService.UpdateUserStatusAsync(
+            await _refreshTokenRevocationService.RevokeAllForUserAsync(
                 request.UserId,
-                UserStatus.Suspended,
+                _clientContextService.IpAddress,
                 cancellationToken);
         }
     }

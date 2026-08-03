@@ -42,6 +42,8 @@ namespace EventOrganizer.Infrastructure
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
+                    options.EventsType = typeof(ActiveAccountJwtBearerEvents);
+
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
@@ -83,9 +85,14 @@ namespace EventOrganizer.Infrastructure
                 provider.GetRequiredService<IdentityService>());
             services.AddScoped<IUserManagementService>(provider =>
                 provider.GetRequiredService<IdentityService>());
-            services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
+            services.AddScoped<RefreshTokenStore>();
+            services.AddScoped<IRefreshTokenStore>(provider =>
+                provider.GetRequiredService<RefreshTokenStore>());
+            services.AddScoped<IRefreshTokenRevocationService>(provider =>
+                provider.GetRequiredService<RefreshTokenStore>());
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             services.AddScoped<ITokenService, JwtTokenService>();
+            services.AddScoped<ActiveAccountJwtBearerEvents>();
 
             return services;
         }

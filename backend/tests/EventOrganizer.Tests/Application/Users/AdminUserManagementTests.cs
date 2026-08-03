@@ -19,8 +19,11 @@ namespace EventOrganizer.Tests.Application.Users
             var userManagementService = new FakeUserManagementService(
                 CreateUser(adminUserId, "Admin", ApplicationRoles.Admin),
                 CreateUser(participantUserId, "Participant", ApplicationRoles.Participant));
+            var refreshTokenRevocationService = new FakeRefreshTokenRevocationService();
             var handler = new SuspendUserCommandHandler(
                 new TestCurrentUserService(adminUserId, ApplicationRoles.Admin),
+                new TestClientContextService(),
+                refreshTokenRevocationService,
                 userManagementService);
 
             await handler.Handle(
@@ -28,6 +31,7 @@ namespace EventOrganizer.Tests.Application.Users
                 CancellationToken.None);
 
             Assert.Equal(UserStatus.Suspended, userManagementService.Users[participantUserId].Status);
+            Assert.Contains(participantUserId, refreshTokenRevocationService.RevokedUserIds);
         }
 
         [Fact]
@@ -38,6 +42,8 @@ namespace EventOrganizer.Tests.Application.Users
                 CreateUser(adminUserId, "Admin", ApplicationRoles.Admin));
             var handler = new SuspendUserCommandHandler(
                 new TestCurrentUserService(adminUserId, ApplicationRoles.Admin),
+                new TestClientContextService(),
+                new FakeRefreshTokenRevocationService(),
                 userManagementService);
 
             await Assert.ThrowsAsync<ConflictException>(() =>
@@ -56,6 +62,8 @@ namespace EventOrganizer.Tests.Application.Users
                 CreateUser(targetAdminUserId, "Target Admin", ApplicationRoles.Admin));
             var handler = new SuspendUserCommandHandler(
                 new TestCurrentUserService(currentAdminUserId, ApplicationRoles.Admin),
+                new TestClientContextService(),
+                new FakeRefreshTokenRevocationService(),
                 userManagementService);
 
             await Assert.ThrowsAsync<ConflictException>(() =>
@@ -222,6 +230,34 @@ namespace EventOrganizer.Tests.Application.Users
             {
                 return _roles.Contains(role);
             }
+        }
+
+        private sealed class FakeRefreshTokenRevocationService
+            : IRefreshTokenRevocationService
+        {
+            public List<Guid> RevokedUserIds { get; } = [];
+
+            public Task RevokeAsync(
+                string tokenHash,
+                string? ipAddress,
+                CancellationToken cancellationToken)
+            {
+                throw new NotSupportedException();
+            }
+
+            public Task RevokeAllForUserAsync(
+                Guid userId,
+                string? ipAddress,
+                CancellationToken cancellationToken)
+            {
+                RevokedUserIds.Add(userId);
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class TestClientContextService : IClientContextService
+        {
+            public string? IpAddress => "127.0.0.1";
         }
     }
 }

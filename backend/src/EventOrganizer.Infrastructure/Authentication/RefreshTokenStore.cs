@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Infrastructure.Authentication
 {
-    public sealed class RefreshTokenStore : IRefreshTokenStore
+    public sealed class RefreshTokenStore
+        : IRefreshTokenStore, IRefreshTokenRevocationService
     {
         private readonly AppDbContext _dbContext;
 
@@ -84,6 +85,54 @@ namespace EventOrganizer.Infrastructure.Authentication
                 CreatedAtUtc = DateTime.UtcNow,
                 CreatedByIpAddress = ipAddress,
             });
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task RevokeAsync(
+            string tokenHash,
+            string? ipAddress,
+            CancellationToken cancellationToken)
+        {
+            var refreshToken = await _dbContext.RefreshTokens
+                .FirstOrDefaultAsync(
+                    token => token.TokenHash == tokenHash,
+                    cancellationToken);
+
+            if (refreshToken is null || refreshToken.IsRevoked)
+            {
+                return;
+            }
+
+            refreshToken.RevokedAtUtc = DateTime.UtcNow;
+            refreshToken.RevokedByIpAddress = ipAddress;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task RevokeAllForUserAsync(
+            Guid userId,
+            string? ipAddress,
+            CancellationToken cancellationToken)
+        {
+            var activeRefreshTokens = await _dbContext.RefreshTokens
+                .Where(token =>
+                    token.UserId == userId
+                    && token.RevokedAtUtc == null)
+                .ToListAsync(cancellationToken);
+
+            if (activeRefreshTokens.Count == 0)
+            {
+                return;
+            }
+
+            var revokedAtUtc = DateTime.UtcNow;
+
+            foreach (var refreshToken in activeRefreshTokens)
+            {
+                refreshToken.RevokedAtUtc = revokedAtUtc;
+                refreshToken.RevokedByIpAddress = ipAddress;
+            }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
