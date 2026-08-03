@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Infrastructure.Identity
 {
-    public class IdentityService : IIdentityService
+    public class IdentityService : IIdentityService, IUserManagementService
     {
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -104,6 +104,105 @@ namespace EventOrganizer.Infrastructure.Identity
                     user.FullName,
                     user.Email!,
                     user.Status);
+        }
+
+        public async Task<IReadOnlyList<UserSummaryResult>> ListUsersAsync(
+            UserListFilter filter,
+            CancellationToken cancellationToken)
+        {
+            var query = _userManager.Users.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var search = filter.Search.Trim().ToLower();
+
+                query = query.Where(user =>
+                    user.FullName.ToLower().Contains(search)
+                    || user.Email!.ToLower().Contains(search));
+            }
+
+            if (filter.Status.HasValue)
+            {
+                query = query.Where(user => user.Status == filter.Status.Value);
+            }
+
+            var users = await query
+                .OrderBy(user => user.FullName)
+                .ThenBy(user => user.Email)
+                .ToListAsync(cancellationToken);
+
+            var results = new List<UserSummaryResult>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+
+                if (!string.IsNullOrWhiteSpace(filter.Role)
+                    && !roles.Contains(filter.Role.Trim()))
+                {
+                    continue;
+                }
+
+                results.Add(MapToUserSummary(user, roles.ToArray()));
+            }
+
+            return results;
+        }
+
+        public async Task<UserSummaryResult?> FindUserSummaryByIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
+        {
+            var user = await _userManager.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(currentUser => currentUser.Id == userId, cancellationToken);
+
+            if (user is null)
+            {
+                return null;
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return MapToUserSummary(user, roles.ToArray());
+        }
+
+        public async Task UpdateUserStatusAsync(
+            Guid userId,
+            UserStatus status,
+            CancellationToken cancellationToken)
+        {
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(currentUser => currentUser.Id == userId, cancellationToken);
+
+            if (user is null)
+            {
+                throw new InvalidOperationException($"User with id '{userId}' was not found.");
+            }
+
+            user.Status = status;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(error => error.Description));
+                throw new InvalidOperationException($"Failed to update user status. Errors: {errors}");
+            }
+        }
+
+        private static UserSummaryResult MapToUserSummary(
+            ApplicationUser user,
+            IReadOnlyCollection<string> roles)
+        {
+            return new UserSummaryResult(
+                user.Id,
+                user.FullName,
+                user.Email!,
+                user.Status,
+                user.CreatedAtUtc,
+                user.VerifiedAtUtc,
+                roles.ToArray());
         }
     }
 }

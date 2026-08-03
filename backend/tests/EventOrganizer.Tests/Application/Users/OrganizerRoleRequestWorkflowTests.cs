@@ -65,6 +65,58 @@ namespace EventOrganizer.Tests.Application.Users
                     CancellationToken.None));
         }
 
+        [Theory]
+        [InlineData(OrganizerRoleRequestStatus.Rejected)]
+        [InlineData(OrganizerRoleRequestStatus.Withdrawn)]
+        public async Task Submit_AfterPreviousRequestIsClosed_CreatesNewPendingRequest(
+            OrganizerRoleRequestStatus previousStatus)
+        {
+            var participantUserId = await CreateOrganizerUserAsync("participant@example.com");
+            var previousRequest = OrganizerRoleRequest.Create(
+                participantUserId,
+                "Previous request.",
+                new DateTime(2026, 8, 1, 10, 0, 0, DateTimeKind.Utc));
+
+            if (previousStatus == OrganizerRoleRequestStatus.Rejected)
+            {
+                var adminUserId = await CreateOrganizerUserAsync("admin@example.com");
+                previousRequest.Reject(
+                    adminUserId,
+                    "Additional information is required.",
+                    new DateTime(2026, 8, 1, 11, 0, 0, DateTimeKind.Utc));
+            }
+            else
+            {
+                previousRequest.Withdraw(
+                    new DateTime(2026, 8, 1, 11, 0, 0, DateTimeKind.Utc));
+            }
+
+            DbContext.OrganizerRoleRequests.Add(previousRequest);
+            await DbContext.SaveChangesAsync();
+
+            var identityService = new FakeIdentityService(
+                new AuthUserResult(
+                    participantUserId,
+                    "Test Participant",
+                    "participant@example.com",
+                    UserStatus.Active),
+                ApplicationRoles.Participant);
+            var handler = new SubmitOrganizerRoleRequestCommandHandler(
+                DbContext,
+                new TestCurrentUserService(participantUserId, ApplicationRoles.Participant),
+                identityService);
+
+            var newRequestId = await handler.Handle(
+                new SubmitOrganizerRoleRequestCommand("Updated organizer request."),
+                CancellationToken.None);
+
+            var newRequest = await DbContext.OrganizerRoleRequests
+                .SingleAsync(request => request.Id == newRequestId);
+
+            Assert.Equal(OrganizerRoleRequestStatus.Pending, newRequest.Status);
+            Assert.NotEqual(previousRequest.Id, newRequest.Id);
+        }
+
         [Fact]
         public async Task Approve_WithExpectedVersion_ApprovesRequestAndAssignsOrganizerRole()
         {

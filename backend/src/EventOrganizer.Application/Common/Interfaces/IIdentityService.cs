@@ -1,4 +1,4 @@
-﻿namespace EventOrganizer.Application.Common.Interfaces
+namespace EventOrganizer.Application.Common.Interfaces
 {
     public interface IIdentityService
     {

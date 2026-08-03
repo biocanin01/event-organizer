@@ -17,5 +17,7 @@ namespace EventOrganizer.Api.Authorization
         public const string CanRequestOrganizerRole = "CanRequestOrganizerRole";
 
         public const string CanManageOrganizerRoleRequests = "CanManageOrganizerRoleRequests";
+
+        public const string CanManageUsers = "CanManageUsers";
     }
 }
