@@ -28,6 +28,9 @@ namespace EventOrganizer.Tests.Api
             Assert.Equal(
                 "http://localhost:5173",
                 response.Headers.GetValues("Access-Control-Allow-Origin").Single());
+            Assert.Equal(
+                "true",
+                response.Headers.GetValues("Access-Control-Allow-Credentials").Single());
         }
     }
 }

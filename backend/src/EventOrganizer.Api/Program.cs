@@ -23,7 +23,8 @@ builder.Services.AddCors(options =>
         policy => policy
             .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod());
+            .AllowAnyMethod()
+            .AllowCredentials());
 });
 builder.Services.AddSwaggerGen(options =>
 {

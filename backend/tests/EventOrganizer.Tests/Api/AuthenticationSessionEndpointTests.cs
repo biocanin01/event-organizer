@@ -32,14 +32,15 @@ namespace EventOrganizer.Tests.Api
                 .ReadFromJsonAsync<AuthResponse>();
 
             Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
-            Assert.NotNull(authentication?.RefreshToken);
+            Assert.NotNull(authentication);
+            Assert.Null(authentication.RefreshToken);
+            Assert.Contains(
+                registerResponse.Headers.GetValues("Set-Cookie"),
+                value => value.Contains("eventorganizer_refresh_token")
+                    && value.Contains("httponly", StringComparison.OrdinalIgnoreCase));
 
-            var logoutResponse = await client.PostAsJsonAsync(
-                "/api/auth/logout",
-                new LogoutRequest(authentication.RefreshToken));
-            var refreshResponse = await client.PostAsJsonAsync(
-                "/api/auth/refresh",
-                new RefreshTokenRequest(authentication.RefreshToken));
+            var logoutResponse = await client.PostAsync("/api/auth/logout", null);
+            var refreshResponse = await client.PostAsync("/api/auth/refresh", null);
 
             Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
             Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
@@ -60,7 +61,8 @@ namespace EventOrganizer.Tests.Api
             var adminClient = CreateAuthenticatedAdminClient(adminUserId);
 
             Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
-            Assert.NotNull(authentication?.RefreshToken);
+            Assert.NotNull(authentication);
+            Assert.Null(authentication.RefreshToken);
 
             var suspendResponse = await adminClient.PatchAsync(
                 $"/api/admin/users/{authentication.UserId}/suspend",
@@ -68,9 +70,9 @@ namespace EventOrganizer.Tests.Api
             var reactivateResponse = await adminClient.PatchAsync(
                 $"/api/admin/users/{authentication.UserId}/reactivate",
                 null);
-            var oldSessionRefreshResponse = await anonymousClient.PostAsJsonAsync(
+            var oldSessionRefreshResponse = await anonymousClient.PostAsync(
                 "/api/auth/refresh",
-                new RefreshTokenRequest(authentication.RefreshToken));
+                null);
             var newLoginResponse = await anonymousClient.PostAsJsonAsync(
                 "/api/auth/login",
                 new LoginRequest(email, password));
