@@ -1,6 +1,10 @@
 import { ApiError } from './ApiError'
 import { apiBaseUrl } from './config'
 
+export interface ApiRequestOptions extends RequestInit {
+  accessToken?: string | null
+}
+
 interface ApiErrorPayload {
   status?: number
   title?: string
@@ -28,18 +32,24 @@ async function readResponseBody(response: Response): Promise<unknown> {
 
 export async function apiRequest<T>(
   path: string,
-  init: RequestInit = {},
+  init: ApiRequestOptions = {},
 ): Promise<T> {
+  const { accessToken, ...requestInit } = init
   const headers = new Headers(init.headers)
 
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
 
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
+  }
+
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   const response = await fetch(`${apiBaseUrl}${normalizedPath}`, {
-    ...init,
+    ...requestInit,
     headers,
+    credentials: 'include',
   })
   const body = await readResponseBody(response)
 

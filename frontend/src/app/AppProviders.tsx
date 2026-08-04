@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { useState, type PropsWithChildren } from 'react'
 import { BrowserRouter } from 'react-router'
+import { AuthProvider } from '../features/auth/AuthContext'
 import { theme } from './theme/theme'
 
 export function AppProviders({ children }: PropsWithChildren) {
@@ -22,7 +23,9 @@ export function AppProviders({ children }: PropsWithChildren) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>{children}</BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>{children}</BrowserRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )
