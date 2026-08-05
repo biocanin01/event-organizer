@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router'
 import { PublicOnlyRoute } from '../../features/auth/PublicOnlyRoute'
 import { RequireAuth } from '../../features/auth/RequireAuth'
 import { applicationRoles } from '../../features/auth/types'
+import { AdminOrganizerRequestsPage } from '../../features/organizerRequests/AdminOrganizerRequestsPage'
+import { AdminUsersPage } from '../../features/users/AdminUsersPage'
 import { DashboardPage } from '../../pages/DashboardPage'
 import { HomePage } from '../../pages/HomePage'
 import { LoginPage } from '../../pages/LoginPage'
@@ -73,21 +75,11 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route
             path="admin/users"
-            element={
-              <PlaceholderSectionPage
-                title="Korisnici"
-                description="Administratorski pregled korisnika, statusa i aktivnosti."
-              />
-            }
+            element={<AdminUsersPage />}
           />
           <Route
             path="admin/organizer-requests"
-            element={
-              <PlaceholderSectionPage
-                title="Zahtevi za organizatore"
-                description="Administratorsko odobravanje i odbijanje zahteva za Organizer rolu."
-              />
-            }
+            element={<AdminOrganizerRequestsPage />}
           />
         </Route>
       </Route>

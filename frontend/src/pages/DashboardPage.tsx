@@ -1,4 +1,5 @@
 import { Paper, Stack, Typography } from '@mui/material'
+import { ParticipantOrganizerRequestPanel } from '../features/organizerRequests/ParticipantOrganizerRequestPanel'
 import { useAuth } from '../features/auth/useAuth'
 
 export function DashboardPage() {
@@ -21,6 +22,7 @@ export function DashboardPage() {
           modula.
         </Typography>
       </Paper>
+      <ParticipantOrganizerRequestPanel />
     </Stack>
   )
 }
