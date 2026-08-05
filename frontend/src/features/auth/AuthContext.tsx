@@ -7,7 +7,11 @@ import {
   type PropsWithChildren,
 } from 'react'
 import * as authApi from './authApi'
-import { AuthContext, type AuthContextValue, type AuthStatus } from './authContextValue'
+import {
+  AuthContext,
+  type AuthContextValue,
+  type AuthStatus,
+} from './authContextValue'
 import type { AuthSession, LoginRequest, RegisterRequest } from './types'
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -15,16 +19,26 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<AuthSession | null>(null)
   const restoredRef = useRef(false)
 
+  const clearSession = useCallback(() => {
+    setSession(null)
+    setStatus('anonymous')
+  }, [])
+
+  const refresh = useCallback(async () => {
+    const refreshedSession = await authApi.refreshSession()
+    setSession(refreshedSession)
+    setStatus('authenticated')
+
+    return refreshedSession
+  }, [])
+
   const restoreSession = useCallback(async () => {
     try {
-      const restoredSession = await authApi.refreshSession()
-      setSession(restoredSession)
-      setStatus('authenticated')
+      await refresh()
     } catch {
-      setSession(null)
-      setStatus('anonymous')
+      clearSession()
     }
-  }, [])
+  }, [clearSession, refresh])
 
   useEffect(() => {
     if (restoredRef.current) {
@@ -51,14 +65,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       await authApi.logout()
     } finally {
-      setSession(null)
-      setStatus('anonymous')
+      clearSession()
     }
-  }, [])
-
-  const refresh = useCallback(async () => {
-    await restoreSession()
-  }, [restoreSession])
+  }, [clearSession])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -68,8 +77,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       register,
       logout,
       refresh,
+      clearSession,
     }),
-    [status, session, login, register, logout, refresh],
+    [status, session, login, register, logout, refresh, clearSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -21,6 +21,7 @@ import { useMemo, useState } from 'react'
 import { StatusChip } from '../../shared/components/StatusChip'
 import { formatDateTime } from '../../shared/format/dateTime'
 import { applicationRoles, type ApplicationRole } from '../auth/types'
+import { useAuthenticatedRequest } from '../auth/useAuthenticatedRequest'
 import { useAuth } from '../auth/useAuth'
 import { UserDetailsDialog } from './UserDetailsDialog'
 import { listUsers } from './usersApi'
@@ -41,7 +42,7 @@ const roles: ApplicationRole[] = [
 
 export function AdminUsersPage() {
   const { session } = useAuth()
-  const accessToken = session?.accessToken ?? ''
+  const authenticatedRequest = useAuthenticatedRequest()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<UserStatus | ''>('')
@@ -59,8 +60,8 @@ export function AdminUsersPage() {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users', filters],
-    queryFn: () => listUsers(accessToken, filters),
-    enabled: Boolean(accessToken),
+    queryFn: () => listUsers(authenticatedRequest, filters),
+    enabled: Boolean(session?.accessToken),
   })
 
   return (

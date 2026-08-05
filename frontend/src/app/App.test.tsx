@@ -13,7 +13,7 @@ function renderApplication() {
   )
 }
 
-function createAuthResponse(roles: string[]) {
+function createAuthResponse(roles: string[], accessToken = 'access-token') {
   return {
     userId: roles.includes('Admin') ? 'admin-id' : 'participant-id',
     fullName: roles.includes('Admin') ? 'Admin User' : 'Participant User',
@@ -21,7 +21,7 @@ function createAuthResponse(roles: string[]) {
       ? 'admin@example.com'
       : 'participant@example.com',
     roles,
-    accessToken: 'access-token',
+    accessToken,
     accessTokenExpiresAtUtc: '2026-08-04T12:00:00Z',
   }
 }
@@ -155,6 +155,102 @@ describe('App', () => {
         expect.objectContaining({ method: 'POST' }),
       ),
     )
+  })
+
+  it('refreshes the access token and retries a protected request once', async () => {
+    let refreshCalls = 0
+    let userListCalls = 0
+    const fetchMock = vi.fn((input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        refreshCalls += 1
+        return Promise.resolve(
+          jsonResponse(
+            createAuthResponse(
+              ['Admin'],
+              refreshCalls === 1 ? 'expired-access-token' : 'new-access-token',
+            ),
+          ),
+        )
+      }
+
+      if (path === '/admin/users') {
+        userListCalls += 1
+
+        if (userListCalls === 1) {
+          return Promise.resolve(new Response(undefined, { status: 401 }))
+        }
+
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'participant-id',
+              fullName: 'Participant User',
+              email: 'participant@example.com',
+              status: 'Active',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              verifiedAtUtc: '2026-08-01T10:00:00Z',
+              roles: ['Participant'],
+            },
+          ]),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/users')
+
+    renderApplication()
+
+    expect(await screen.findByText('Participant User')).toBeInTheDocument()
+
+    expect(refreshCalls).toBe(2)
+    expect(userListCalls).toBe(2)
+
+    const retriedUserRequest = fetchMock.mock.calls.findLast(([input, init]) =>
+      input.toString().endsWith('/admin/users') && init !== undefined,
+    )
+    const retriedUserRequestHeaders = retriedUserRequest?.[1]?.headers as Headers
+
+    expect(retriedUserRequestHeaders.get('Authorization')).toBe(
+      'Bearer new-access-token',
+    )
+  })
+
+  it('clears the session when protected request refresh fails', async () => {
+    let refreshCalls = 0
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        refreshCalls += 1
+
+        if (refreshCalls === 1) {
+          return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+        }
+
+        return Promise.resolve(new Response(undefined, { status: 401 }))
+      }
+
+      if (path === '/admin/users') {
+        return Promise.resolve(new Response(undefined, { status: 401 }))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/users')
+
+    renderApplication()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Prijava na nalog' }),
+    ).toBeInTheDocument()
+    expect(refreshCalls).toBe(2)
   })
 
   it('allows an admin to approve a pending organizer role request', async () => {

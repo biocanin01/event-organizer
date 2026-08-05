@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '../../api/ApiError'
 import { StatusChip } from '../../shared/components/StatusChip'
 import { formatDateTime } from '../../shared/format/dateTime'
+import { useAuthenticatedRequest } from '../auth/useAuthenticatedRequest'
 import { useAuth } from '../auth/useAuth'
 import { getUserById, reactivateUser, suspendUser } from './usersApi'
 import type { UserSummary } from './types'
@@ -30,8 +31,8 @@ function getErrorMessage(error: unknown) {
 
 export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
   const { session } = useAuth()
+  const authenticatedRequest = useAuthenticatedRequest()
   const queryClient = useQueryClient()
-  const accessToken = session?.accessToken ?? ''
   const userId = user?.id
 
   const {
@@ -40,19 +41,19 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
     error,
   } = useQuery({
     queryKey: ['admin-users', 'details', userId],
-    queryFn: () => getUserById(accessToken, userId ?? ''),
-    enabled: Boolean(accessToken && userId),
+    queryFn: () => getUserById(authenticatedRequest, userId ?? ''),
+    enabled: Boolean(session?.accessToken && userId),
   })
 
   const suspendMutation = useMutation({
-    mutationFn: () => suspendUser(accessToken, userId ?? ''),
+    mutationFn: () => suspendUser(authenticatedRequest, userId ?? ''),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
   })
 
   const reactivateMutation = useMutation({
-    mutationFn: () => reactivateUser(accessToken, userId ?? ''),
+    mutationFn: () => reactivateUser(authenticatedRequest, userId ?? ''),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },

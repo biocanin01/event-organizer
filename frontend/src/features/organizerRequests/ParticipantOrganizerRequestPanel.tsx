@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ApiError } from '../../api/ApiError'
 import { applicationRoles } from '../auth/types'
+import { useAuthenticatedRequest } from '../auth/useAuthenticatedRequest'
 import { useAuth } from '../auth/useAuth'
 import {
   getMyOrganizerRoleRequest,
@@ -44,17 +45,17 @@ function getErrorMessage(error: unknown) {
 
 export function ParticipantOrganizerRequestPanel() {
   const { session } = useAuth()
+  const authenticatedRequest = useAuthenticatedRequest()
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
-  const accessToken = session?.accessToken ?? ''
   const userRoles = session?.user.roles ?? []
   const isOrganizer = userRoles.includes(applicationRoles.organizer)
   const isAdmin = userRoles.includes(applicationRoles.admin)
 
   const { data: request, isLoading } = useQuery({
     queryKey: organizerRequestQueryKey,
-    queryFn: () => getMyOrganizerRoleRequest(accessToken),
-    enabled: Boolean(accessToken) && !isAdmin,
+    queryFn: () => getMyOrganizerRoleRequest(authenticatedRequest),
+    enabled: Boolean(session?.accessToken) && !isAdmin,
   })
 
   const {
@@ -71,7 +72,7 @@ export function ParticipantOrganizerRequestPanel() {
 
   const submitMutation = useMutation({
     mutationFn: (values: OrganizerRequestFormValues) =>
-      submitOrganizerRoleRequest(accessToken, values),
+      submitOrganizerRoleRequest(authenticatedRequest, values),
     onSuccess: async () => {
       reset()
       setError(null)
@@ -86,7 +87,7 @@ export function ParticipantOrganizerRequestPanel() {
         throw new Error('Organizer request is not available.')
       }
 
-      return withdrawOrganizerRoleRequest(accessToken, request.id, {
+      return withdrawOrganizerRoleRequest(authenticatedRequest, request.id, {
         version: request.version,
       })
     },

@@ -1,4 +1,4 @@
-import { apiRequest } from '../../api/apiClient'
+import type { ApiRequestOptions } from '../../api/apiClient'
 import type {
   OrganizerRoleRequest,
   OrganizerRoleRequestStatus,
@@ -8,73 +8,72 @@ import type {
   VersionedOrganizerRoleRequestDecision,
 } from './types'
 
+type AuthenticatedRequest = <T>(
+  path: string,
+  init?: ApiRequestOptions,
+) => Promise<T>
+
 export async function getMyOrganizerRoleRequest(
-  accessToken: string,
+  authenticatedRequest: AuthenticatedRequest,
 ): Promise<OrganizerRoleRequest | undefined> {
-  return apiRequest<OrganizerRoleRequest | undefined>(
+  return authenticatedRequest<OrganizerRoleRequest | undefined>(
     '/organizer-role-requests/me',
-    { accessToken },
   )
 }
 
 export async function submitOrganizerRoleRequest(
-  accessToken: string,
-  request: SubmitOrganizerRoleRequest,
+  authenticatedRequest: AuthenticatedRequest,
+  payload: SubmitOrganizerRoleRequest,
 ): Promise<SubmitOrganizerRoleRequestResponse> {
-  return apiRequest<SubmitOrganizerRoleRequestResponse>(
+  return authenticatedRequest<SubmitOrganizerRoleRequestResponse>(
     '/organizer-role-requests',
     {
       method: 'POST',
-      body: JSON.stringify(request),
-      accessToken,
+      body: JSON.stringify(payload),
     },
   )
 }
 
 export async function withdrawOrganizerRoleRequest(
-  accessToken: string,
+  authenticatedRequest: AuthenticatedRequest,
   id: string,
-  request: VersionedOrganizerRoleRequestDecision,
+  payload: VersionedOrganizerRoleRequestDecision,
 ): Promise<void> {
-  await apiRequest<void>(`/organizer-role-requests/${id}/withdraw`, {
+  await authenticatedRequest<void>(`/organizer-role-requests/${id}/withdraw`, {
     method: 'PATCH',
-    body: JSON.stringify(request),
-    accessToken,
+    body: JSON.stringify(payload),
   })
 }
 
 export async function listOrganizerRoleRequests(
-  accessToken: string,
+  authenticatedRequest: AuthenticatedRequest,
   status: OrganizerRoleRequestStatus,
 ): Promise<OrganizerRoleRequest[]> {
   const searchParams = new URLSearchParams({ status })
 
-  return apiRequest<OrganizerRoleRequest[]>(
+  return authenticatedRequest<OrganizerRoleRequest[]>(
     `/organizer-role-requests?${searchParams.toString()}`,
-    { accessToken },
   )
 }
 
 export async function approveOrganizerRoleRequest(
-  accessToken: string,
+  authenticatedRequest: AuthenticatedRequest,
   id: string,
-  request: VersionedOrganizerRoleRequestDecision,
+  payload: VersionedOrganizerRoleRequestDecision,
 ): Promise<void> {
-  await apiRequest<void>(`/organizer-role-requests/${id}/approve`, {
+  await authenticatedRequest<void>(`/organizer-role-requests/${id}/approve`, {
     method: 'PATCH',
-    body: JSON.stringify(request),
-    accessToken,
+    body: JSON.stringify(payload),
   })
 }
 
 export async function rejectOrganizerRoleRequest(
-  accessToken: string,
+  authenticatedRequest: AuthenticatedRequest,
   id: string,
-  request: RejectOrganizerRoleRequest,
+  payload: RejectOrganizerRoleRequest,
 ): Promise<void> {
-  await apiRequest<void>(`/organizer-role-requests/${id}/reject`, {
+  await authenticatedRequest<void>(`/organizer-role-requests/${id}/reject`, {
     method: 'PATCH',
-    body: JSON.stringify(request),
-    accessToken,
+    body: JSON.stringify(payload),
   })
 }

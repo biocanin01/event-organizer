@@ -28,6 +28,7 @@ import { useMemo, useState } from 'react'
 import { ApiError } from '../../api/ApiError'
 import { StatusChip } from '../../shared/components/StatusChip'
 import { formatDateTime } from '../../shared/format/dateTime'
+import { useAuthenticatedRequest } from '../auth/useAuthenticatedRequest'
 import { useAuth } from '../auth/useAuth'
 import { listUsers } from '../users/usersApi'
 import {
@@ -55,8 +56,8 @@ function getErrorMessage(error: unknown) {
 
 export function AdminOrganizerRequestsPage() {
   const { session } = useAuth()
+  const authenticatedRequest = useAuthenticatedRequest()
   const queryClient = useQueryClient()
-  const accessToken = session?.accessToken ?? ''
   const [status, setStatus] = useState<OrganizerRoleRequestStatus>('Pending')
   const [error, setError] = useState<string | null>(null)
   const [requestToReject, setRequestToReject] =
@@ -67,14 +68,14 @@ export function AdminOrganizerRequestsPage() {
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: requestsQueryKey,
-    queryFn: () => listOrganizerRoleRequests(accessToken, status),
-    enabled: Boolean(accessToken),
+    queryFn: () => listOrganizerRoleRequests(authenticatedRequest, status),
+    enabled: Boolean(session?.accessToken),
   })
 
   const { data: users = [] } = useQuery({
     queryKey: ['admin-users', 'lookup'],
-    queryFn: () => listUsers(accessToken),
-    enabled: Boolean(accessToken),
+    queryFn: () => listUsers(authenticatedRequest),
+    enabled: Boolean(session?.accessToken),
   })
 
   const usersById = useMemo(
@@ -84,7 +85,7 @@ export function AdminOrganizerRequestsPage() {
 
   const approveMutation = useMutation({
     mutationFn: (request: OrganizerRoleRequest) =>
-      approveOrganizerRoleRequest(accessToken, request.id, {
+      approveOrganizerRoleRequest(authenticatedRequest, request.id, {
         version: request.version,
       }),
     onSuccess: async () => {
@@ -99,7 +100,7 @@ export function AdminOrganizerRequestsPage() {
 
   const rejectMutation = useMutation({
     mutationFn: (request: OrganizerRoleRequest) =>
-      rejectOrganizerRoleRequest(accessToken, request.id, {
+      rejectOrganizerRoleRequest(authenticatedRequest, request.id, {
         decisionReason,
         version: request.version,
       }),

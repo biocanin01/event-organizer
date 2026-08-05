@@ -1,5 +1,10 @@
-import { apiRequest } from '../../api/apiClient'
+import type { ApiRequestOptions } from '../../api/apiClient'
 import type { UserDetails, UserListFilters, UserSummary } from './types'
+
+type AuthenticatedRequest = <T>(
+  path: string,
+  init?: ApiRequestOptions,
+) => Promise<T>
 
 function buildUserListPath(filters: UserListFilters = {}) {
   const searchParams = new URLSearchParams()
@@ -21,35 +26,33 @@ function buildUserListPath(filters: UserListFilters = {}) {
 }
 
 export async function listUsers(
-  accessToken: string,
+  request: AuthenticatedRequest,
   filters: UserListFilters = {},
 ): Promise<UserSummary[]> {
-  return apiRequest<UserSummary[]>(buildUserListPath(filters), { accessToken })
+  return request<UserSummary[]>(buildUserListPath(filters))
 }
 
 export async function getUserById(
-  accessToken: string,
+  request: AuthenticatedRequest,
   id: string,
 ): Promise<UserDetails> {
-  return apiRequest<UserDetails>(`/admin/users/${id}`, { accessToken })
+  return request<UserDetails>(`/admin/users/${id}`)
 }
 
 export async function suspendUser(
-  accessToken: string,
+  request: AuthenticatedRequest,
   id: string,
 ): Promise<void> {
-  await apiRequest<void>(`/admin/users/${id}/suspend`, {
+  await request<void>(`/admin/users/${id}/suspend`, {
     method: 'PATCH',
-    accessToken,
   })
 }
 
 export async function reactivateUser(
-  accessToken: string,
+  request: AuthenticatedRequest,
   id: string,
 ): Promise<void> {
-  await apiRequest<void>(`/admin/users/${id}/reactivate`, {
+  await request<void>(`/admin/users/${id}/reactivate`, {
     method: 'PATCH',
-    accessToken,
   })
 }
