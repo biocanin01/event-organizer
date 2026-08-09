@@ -168,7 +168,7 @@ namespace EventOrganizer.Tests.Application.Events
             Guid eventId,
             ResourceReservationStatus status)
         {
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 "Main Conference Hall",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,

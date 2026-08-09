@@ -30,14 +30,52 @@ namespace EventOrganizer.Application.Commands.UpdateResource
                 throw new NotFoundException(nameof(Resource), request.ResourceId);
             }
 
-            resource.UpdateDetails(
-                request.Name,
-                request.Description,
-                request.Cost,
-                request.Capacity,
-                request.Area,
-                request.QualityScore,
-                DateTime.UtcNow);
+            if (resource.Type != request.Type)
+            {
+                throw new ConflictException("Resource type cannot be changed.");
+            }
+
+            var updatedAtUtc = DateTime.UtcNow;
+
+            switch (resource)
+            {
+                case Venue venue:
+                    venue.UpdateDetails(
+                        request.Name,
+                        request.Description,
+                        request.Cost,
+                        request.Capacity!.Value,
+                        request.QualityScore,
+                        updatedAtUtc);
+                    break;
+
+                case Speaker speaker:
+                    speaker.UpdateDetails(
+                        request.Name,
+                        request.Description,
+                        request.Cost,
+                        request.ExpertiseArea!,
+                        request.QualityScore,
+                        updatedAtUtc);
+                    break;
+
+                case EquipmentPackage equipmentPackage:
+                    equipmentPackage.UpdateDetails(
+                        request.Name,
+                        request.Description,
+                        request.Cost,
+                        request.ProviderName!,
+                        request.SupportedCapacity!.Value,
+                        request.ServiceArea!,
+                        request.IncludesTechnicalSupport!.Value,
+                        request.ContentsSummary!,
+                        request.QualityScore,
+                        updatedAtUtc);
+                    break;
+
+                default:
+                    throw new InvalidOperationException("Unsupported resource type.");
+            }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
         }

@@ -1,3 +1,4 @@
+using EventOrganizer.Application.Common.Validation;
 using EventOrganizer.Domain.Resources;
 using MediatR;
 
@@ -8,7 +9,12 @@ namespace EventOrganizer.Application.Commands.CreateResource
         string Description,
         ResourceType Type,
         decimal Cost,
+        int QualityScore,
         int? Capacity,
-        string? Area,
-        int QualityScore) : IRequest<Guid>;
+        string? ExpertiseArea,
+        string? ProviderName,
+        int? SupportedCapacity,
+        string? ServiceArea,
+        bool? IncludesTechnicalSupport,
+        string? ContentsSummary) : IRequest<Guid>, IResourceDetails;
 }

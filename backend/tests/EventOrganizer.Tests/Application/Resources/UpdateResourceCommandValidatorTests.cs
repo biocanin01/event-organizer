@@ -1,4 +1,5 @@
 using EventOrganizer.Application.Commands.UpdateResource;
+using EventOrganizer.Domain.Resources;
 
 namespace EventOrganizer.Tests.Application.Resources
 {
@@ -6,17 +7,11 @@ namespace EventOrganizer.Tests.Application.Resources
     {
         private readonly UpdateResourceCommandValidator _validator = new();
 
-        [Fact]
-        public void Validate_WithValidCommand_IsValid()
+        [Theory]
+        [MemberData(nameof(ValidCommands))]
+        public void Validate_WithValidCommand_IsValid(UpdateResourceCommand command)
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                "Main Conference Hall",
-                "A hall suitable for conferences with up to 200 participants.",
-                500m,
-                200,
-                "IT",
-                4));
+            var result = _validator.Validate(command);
 
             Assert.True(result.IsValid);
         }
@@ -24,14 +19,9 @@ namespace EventOrganizer.Tests.Application.Resources
         [Fact]
         public void Validate_WithEmptyResourceId_IsInvalid()
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.Empty,
-                "Main Conference Hall",
-                "A hall suitable for conferences with up to 200 participants.",
-                500m,
-                200,
-                "IT",
-                4));
+            var command = ValidVenue() with { ResourceId = Guid.Empty };
+
+            var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
@@ -41,14 +31,9 @@ namespace EventOrganizer.Tests.Application.Resources
         [Fact]
         public void Validate_WithEmptyName_IsInvalid()
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                string.Empty,
-                "A hall suitable for conferences with up to 200 participants.",
-                500m,
-                200,
-                "IT",
-                4));
+            var command = ValidVenue() with { Name = string.Empty };
+
+            var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
@@ -56,71 +41,51 @@ namespace EventOrganizer.Tests.Application.Resources
         }
 
         [Fact]
-        public void Validate_WithNameLongerThan200Characters_IsInvalid()
+        public void Validate_WithMissingVenueCapacity_IsInvalid()
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                new string('a', 201),
-                "A hall suitable for conferences with up to 200 participants.",
-                500m,
-                200,
-                "IT",
-                4));
+            var command = ValidVenue() with { Capacity = null };
+
+            var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
-                error.PropertyName == nameof(UpdateResourceCommand.Name));
+                error.PropertyName == nameof(UpdateResourceCommand.Capacity));
         }
 
         [Fact]
-        public void Validate_WithDescriptionLongerThan2000Characters_IsInvalid()
+        public void Validate_WithMissingSpeakerExpertiseArea_IsInvalid()
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                "Main Conference Hall",
-                new string('a', 2001),
-                500m,
-                200,
-                "IT",
-                4));
+            var command = ValidSpeaker() with { ExpertiseArea = "" };
+
+            var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
-                error.PropertyName == nameof(UpdateResourceCommand.Description));
+                error.PropertyName == nameof(UpdateResourceCommand.ExpertiseArea));
+        }
+
+        [Fact]
+        public void Validate_WithMissingPackageSupportedCapacity_IsInvalid()
+        {
+            var command = ValidEquipmentPackage() with { SupportedCapacity = null };
+
+            var result = _validator.Validate(command);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error =>
+                error.PropertyName == nameof(UpdateResourceCommand.SupportedCapacity));
         }
 
         [Fact]
         public void Validate_WithNegativeCost_IsInvalid()
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                "Main Conference Hall",
-                "A hall suitable for conferences.",
-                -1m,
-                200,
-                "IT",
-                4));
+            var command = ValidVenue() with { Cost = -1m };
+
+            var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
                 error.PropertyName == nameof(UpdateResourceCommand.Cost));
-        }
-
-        [Fact]
-        public void Validate_WithNonPositiveCapacity_IsInvalid()
-        {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                "Main Conference Hall",
-                "A hall suitable for conferences.",
-                500m,
-                0,
-                "IT",
-                4));
-
-            Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, error =>
-                error.PropertyName == nameof(UpdateResourceCommand.Capacity));
         }
 
         [Theory]
@@ -128,18 +93,77 @@ namespace EventOrganizer.Tests.Application.Resources
         [InlineData(6)]
         public void Validate_WithQualityScoreOutsideRange_IsInvalid(int qualityScore)
         {
-            var result = _validator.Validate(new UpdateResourceCommand(
-                Guid.NewGuid(),
-                "Main Conference Hall",
-                "A hall suitable for conferences.",
-                500m,
-                200,
-                "IT",
-                qualityScore));
+            var command = ValidVenue() with { QualityScore = qualityScore };
+
+            var result = _validator.Validate(command);
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error =>
                 error.PropertyName == nameof(UpdateResourceCommand.QualityScore));
+        }
+
+        public static TheoryData<UpdateResourceCommand> ValidCommands()
+        {
+            return new TheoryData<UpdateResourceCommand>
+            {
+                ValidVenue(),
+                ValidSpeaker(),
+                ValidEquipmentPackage(),
+            };
+        }
+
+        private static UpdateResourceCommand ValidVenue()
+        {
+            return new UpdateResourceCommand(
+                Guid.NewGuid(),
+                "Main Conference Hall",
+                "A hall suitable for conferences.",
+                ResourceType.Venue,
+                500m,
+                4,
+                200,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+        }
+
+        private static UpdateResourceCommand ValidSpeaker()
+        {
+            return new UpdateResourceCommand(
+                Guid.NewGuid(),
+                "Architecture Speaker",
+                "Speaker profile.",
+                ResourceType.Speaker,
+                300m,
+                5,
+                null,
+                "IT",
+                null,
+                null,
+                null,
+                null,
+                null);
+        }
+
+        private static UpdateResourceCommand ValidEquipmentPackage()
+        {
+            return new UpdateResourceCommand(
+                Guid.NewGuid(),
+                "Conference AV package",
+                "Audio and video package.",
+                ResourceType.EquipmentPackage,
+                250m,
+                5,
+                null,
+                null,
+                "AV Supplier",
+                150,
+                "Belgrade",
+                true,
+                "Projector, microphones and on-site setup.");
         }
     }
 }

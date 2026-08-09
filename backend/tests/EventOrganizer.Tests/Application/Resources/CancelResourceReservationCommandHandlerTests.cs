@@ -150,7 +150,7 @@ namespace EventOrganizer.Tests.Application.Resources
             Guid organizerUserId)
         {
             var eventItem = await CreateEventAsync(organizerUserId);
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 "Main Conference Hall",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,

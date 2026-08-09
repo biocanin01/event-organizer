@@ -108,7 +108,7 @@ namespace EventOrganizer.Tests.Application.Resources
 
         private async Task<Resource> CreateResourceAsync()
         {
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 "Main Conference Hall",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,

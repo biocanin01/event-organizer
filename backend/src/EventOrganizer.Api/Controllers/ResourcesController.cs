@@ -16,7 +16,7 @@ namespace EventOrganizer.Api.Controllers
 {
     [ApiController]
     [Route("api/resources")]
-    [Authorize(Policy = AuthorizationPolicies.CanManageResources)]
+    [Authorize]
     public sealed class ResourcesController : ControllerBase
     {
         private readonly ISender _sender;
@@ -27,6 +27,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = AuthorizationPolicies.CanBrowseResources)]
         [ProducesResponseType(typeof(IReadOnlyList<ResourceResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -41,6 +42,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.CanBrowseResources)]
         [ProducesResponseType(typeof(ResourceResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -62,6 +64,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.CanManageResources)]
         [ProducesResponseType(typeof(CreateResourceResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -76,9 +79,14 @@ namespace EventOrganizer.Api.Controllers
                     request.Description,
                     request.Type,
                     request.Cost,
+                    request.QualityScore,
                     request.Capacity,
-                    request.Area,
-                    request.QualityScore),
+                    request.ExpertiseArea,
+                    request.ProviderName,
+                    request.SupportedCapacity,
+                    request.ServiceArea,
+                    request.IncludesTechnicalSupport,
+                    request.ContentsSummary),
                 cancellationToken);
 
             return StatusCode(
@@ -87,6 +95,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpPut("{id:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageResources)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -102,16 +111,23 @@ namespace EventOrganizer.Api.Controllers
                     id,
                     request.Name,
                     request.Description,
+                    request.Type,
                     request.Cost,
+                    request.QualityScore,
                     request.Capacity,
-                    request.Area,
-                    request.QualityScore),
+                    request.ExpertiseArea,
+                    request.ProviderName,
+                    request.SupportedCapacity,
+                    request.ServiceArea,
+                    request.IncludesTechnicalSupport,
+                    request.ContentsSummary),
                 cancellationToken);
 
             return NoContent();
         }
 
         [HttpPatch("{id:guid}/mark-available")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageResources)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -129,6 +145,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpPatch("{id:guid}/mark-unavailable")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageResources)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -146,6 +163,7 @@ namespace EventOrganizer.Api.Controllers
         }
 
         [HttpPatch("{id:guid}/archive")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageResources)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

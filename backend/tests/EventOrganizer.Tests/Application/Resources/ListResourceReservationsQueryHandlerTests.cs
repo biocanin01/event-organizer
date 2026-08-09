@@ -27,7 +27,7 @@ namespace EventOrganizer.Tests.Application.Resources
             DateTime startsAtUtc)
         {
             var eventItem = await CreateEventAsync(startsAtUtc: startsAtUtc);
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 $"Conference Hall {startsAtUtc:yyyyMMddHHmm}",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,

@@ -1,4 +1,6 @@
+using EventOrganizer.Application.Common.Validation;
 using MediatR;
+using EventOrganizer.Domain.Resources;
 
 namespace EventOrganizer.Application.Commands.UpdateResource
 {
@@ -6,8 +8,14 @@ namespace EventOrganizer.Application.Commands.UpdateResource
         Guid ResourceId,
         string Name,
         string Description,
+        ResourceType Type,
         decimal Cost,
+        int QualityScore,
         int? Capacity,
-        string? Area,
-        int QualityScore) : IRequest;
+        string? ExpertiseArea,
+        string? ProviderName,
+        int? SupportedCapacity,
+        string? ServiceArea,
+        bool? IncludesTechnicalSupport,
+        string? ContentsSummary) : IRequest, IResourceDetails;
 }

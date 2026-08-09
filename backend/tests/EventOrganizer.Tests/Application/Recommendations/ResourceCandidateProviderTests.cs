@@ -20,10 +20,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
                 area: "it");
             var equipment = await CreateResourceAsync(
                 "Projector",
-                ResourceType.Equipment);
-            await CreateResourceAsync(
-                "Technical Team",
-                ResourceType.TechnicalSupport);
+                ResourceType.EquipmentPackage);
 
             var provider = new ResourceCandidateProvider(DbContext);
 
@@ -45,15 +42,9 @@ namespace EventOrganizer.Tests.Application.Recommendations
                 ResourceType.Venue,
                 capacity: 40);
             await CreateResourceAsync(
-                "Hall Without Capacity",
-                ResourceType.Venue);
-            await CreateResourceAsync(
                 "Medical Speaker",
                 ResourceType.Speaker,
                 area: "Medicine");
-            await CreateResourceAsync(
-                "Speaker Without Area",
-                ResourceType.Speaker);
 
             var provider = new ResourceCandidateProvider(DbContext);
 
@@ -71,10 +62,10 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync();
             var unavailable = await CreateResourceAsync(
                 "Unavailable Projector",
-                ResourceType.Equipment);
+                ResourceType.EquipmentPackage);
             var archived = await CreateResourceAsync(
                 "Archived Projector",
-                ResourceType.Equipment);
+                ResourceType.EquipmentPackage);
 
             unavailable.MarkUnavailable(DateTime.UtcNow);
             archived.Archive(DateTime.UtcNow);
@@ -101,7 +92,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync();
             var equipment = await CreateResourceAsync(
                 "Conference Projector",
-                ResourceType.Equipment);
+                ResourceType.EquipmentPackage);
             await CreateReservationAsync(
                 eventItem,
                 equipment,
@@ -126,7 +117,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync();
             var equipment = await CreateResourceAsync(
                 "Available Projector",
-                ResourceType.Equipment);
+                ResourceType.EquipmentPackage);
             await CreateReservationAsync(
                 eventItem,
                 equipment,
@@ -149,7 +140,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             int? capacity = null,
             string? area = null)
         {
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 name,
                 $"Description for {name}.",
                 type,

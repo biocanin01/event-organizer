@@ -69,6 +69,26 @@ namespace EventOrganizer.Tests.Api
         }
 
         [Fact]
+        public async Task ListResources_WithOrganizerRole_ReturnsOk()
+        {
+            var client = await CreateAuthenticatedClientAsync(ApplicationRoles.Organizer);
+
+            var response = await client.GetAsync("/api/resources");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task ListResources_WithParticipantRole_ReturnsForbidden()
+        {
+            var client = await CreateAuthenticatedClientAsync(ApplicationRoles.Participant);
+
+            var response = await client.GetAsync("/api/resources");
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
         public async Task ArchiveResource_WithParticipantRole_ReturnsForbidden()
         {
             var client = await CreateAuthenticatedClientAsync(ApplicationRoles.Participant);
@@ -118,9 +138,14 @@ namespace EventOrganizer.Tests.Api
                 "A hall suitable for conferences with up to 200 participants.",
                 ResourceType.Venue,
                 500m,
+                4,
                 200,
-                "IT",
-                4);
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         }
     }
 }

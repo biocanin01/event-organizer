@@ -4,7 +4,6 @@ namespace EventOrganizer.Domain.Resources
     {
         Venue = 0,
         Speaker = 1,
-        Equipment = 2,
-        TechnicalSupport = 3,
+        EquipmentPackage = 2,
     }
 }

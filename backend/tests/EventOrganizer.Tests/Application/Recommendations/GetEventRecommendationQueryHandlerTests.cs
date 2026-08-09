@@ -18,7 +18,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync(organizerUserId);
             var venue = await CreateResourceAsync("Main Hall", ResourceType.Venue, 350m, 120, "IT", 5);
             var speaker = await CreateResourceAsync("Architecture Speaker", ResourceType.Speaker, 200m, null, "it", 5);
-            var equipment = await CreateResourceAsync("Projector", ResourceType.Equipment, 100m, null, null, 3);
+            var equipment = await CreateResourceAsync("Projector", ResourceType.EquipmentPackage, 100m, null, null, 3);
             var handler = CreateHandler(organizerUserId, ApplicationRoles.Organizer);
 
             var result = await handler.Handle(
@@ -101,7 +101,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             string? area,
             int qualityScore)
         {
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 name,
                 $"Description for {name}.",
                 type,

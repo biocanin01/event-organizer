@@ -20,16 +20,13 @@ namespace EventOrganizer.Application.Recommendations.Candidates
         {
             ArgumentNullException.ThrowIfNull(eventItem);
 
-            var candidates = await _dbContext.Resources
+            var resources = await _dbContext.Resources
                 .AsNoTracking()
                 .Where(resource =>
                     resource.Status == ResourceStatus.Available
                     && (resource.Type == ResourceType.Venue
                         || resource.Type == ResourceType.Speaker
-                        || resource.Type == ResourceType.Equipment))
-                .Where(resource =>
-                    resource.Type != ResourceType.Venue
-                    || resource.Capacity >= eventItem.Capacity)
+                        || resource.Type == ResourceType.EquipmentPackage))
                 .Where(resource => !_dbContext.ResourceReservations.Any(reservation =>
                     reservation.ResourceId == resource.Id
                     && reservation.StartsAtUtc < eventItem.EndsAtUtc
@@ -37,15 +34,21 @@ namespace EventOrganizer.Application.Recommendations.Candidates
                     && (reservation.Status == ResourceReservationStatus.Pending
                         || reservation.Status == ResourceReservationStatus.Confirmed)))
                 .OrderBy(resource => resource.Name)
+                .ToListAsync(cancellationToken);
+
+            var candidates = resources
+                .Where(resource =>
+                    resource is not Venue venue
+                    || venue.Capacity >= eventItem.Capacity)
                 .Select(resource => new ResourceCandidate(
                     resource.Id,
                     resource.Name,
                     resource.Type,
                     resource.Cost,
-                    resource.Capacity,
-                    resource.Area,
+                    GetCapacity(resource),
+                    GetArea(resource),
                     resource.QualityScore))
-                .ToListAsync(cancellationToken);
+                .ToArray();
 
             var venues = candidates
                 .Where(candidate => candidate.Type == ResourceType.Venue)
@@ -61,10 +64,30 @@ namespace EventOrganizer.Application.Recommendations.Candidates
                 .ToArray();
 
             var equipment = candidates
-                .Where(candidate => candidate.Type == ResourceType.Equipment)
+                .Where(candidate => candidate.Type == ResourceType.EquipmentPackage)
                 .ToArray();
 
             return new ResourceCandidateSet(venues, speakers, equipment);
+        }
+
+        private static int? GetCapacity(Resource resource)
+        {
+            return resource switch
+            {
+                Venue venue => venue.Capacity,
+                EquipmentPackage equipmentPackage => equipmentPackage.SupportedCapacity,
+                _ => null,
+            };
+        }
+
+        private static string? GetArea(Resource resource)
+        {
+            return resource switch
+            {
+                Speaker speaker => speaker.ExpertiseArea,
+                EquipmentPackage equipmentPackage => equipmentPackage.ServiceArea,
+                _ => null,
+            };
         }
     }
 }

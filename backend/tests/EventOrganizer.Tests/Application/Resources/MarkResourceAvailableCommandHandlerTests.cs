@@ -26,10 +26,10 @@ namespace EventOrganizer.Tests.Application.Resources
 
         private async Task<Resource> CreateUnavailableResourceAsync()
         {
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 "Projector",
                 "Conference room projector.",
-                ResourceType.Equipment,
+                ResourceType.EquipmentPackage,
                 100m,
                 null,
                 null,

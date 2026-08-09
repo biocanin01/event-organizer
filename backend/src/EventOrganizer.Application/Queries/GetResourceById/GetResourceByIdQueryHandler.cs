@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Common.Mapping;
 using EventOrganizer.Application.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,22 +20,15 @@ namespace EventOrganizer.Application.Queries.GetResourceById
             GetResourceByIdQuery request,
             CancellationToken cancellationToken)
         {
-            return await _dbContext.Resources
+            var resource = await _dbContext.Resources
                 .AsNoTracking()
-                .Where(resource => resource.Id == request.ResourceId)
-                .Select(resource => new ResourceResponse(
-                    resource.Id,
-                    resource.Name,
-                    resource.Description,
-                    resource.Type.ToString(),
-                    resource.Status.ToString(),
-                    resource.Cost,
-                    resource.Capacity,
-                    resource.Area,
-                    resource.QualityScore,
-                    resource.CreatedAtUtc,
-                    resource.UpdatedAtUtc))
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync(
+                    resource => resource.Id == request.ResourceId,
+                    cancellationToken);
+
+            return resource is null
+                ? null
+                : ResourceResponseMapper.ToResponse(resource);
         }
     }
 }

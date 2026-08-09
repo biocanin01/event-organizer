@@ -37,7 +37,7 @@ namespace EventOrganizer.Tests.Application.Resources
         private async Task<ResourceReservation> CreateReservationAsync()
         {
             var eventItem = await CreateEventAsync();
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 "Main Conference Hall",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,

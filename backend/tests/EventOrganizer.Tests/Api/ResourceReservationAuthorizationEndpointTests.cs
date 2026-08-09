@@ -240,7 +240,7 @@ namespace EventOrganizer.Tests.Api
                 resolvedOrganizerUserId,
                 DateTime.UtcNow);
 
-            var resource = Resource.Create(
+            var resource = TestResourceFactory.Create(
                 $"Conference Hall {Guid.NewGuid():N}",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,

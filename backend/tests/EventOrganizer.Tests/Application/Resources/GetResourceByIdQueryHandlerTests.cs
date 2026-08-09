@@ -1,4 +1,4 @@
-﻿using EventOrganizer.Application.Queries.GetResourceById;
+using EventOrganizer.Application.Queries.GetResourceById;
 using EventOrganizer.Domain.Resources;
 
 namespace EventOrganizer.Tests.Application.Resources
@@ -8,13 +8,11 @@ namespace EventOrganizer.Tests.Application.Resources
         [Fact]
         public async Task Handle_WhenResourceExists_ReturnsResource()
         {
-            var resource = Resource.Create(
+            var resource = Venue.Create(
                 "Conference Hall",
                 "Main conference hall.",
-                ResourceType.Venue,
                 500m,
                 150,
-                "IT",
                 4,
                 DateTime.UtcNow);
 
@@ -34,8 +32,9 @@ namespace EventOrganizer.Tests.Application.Resources
             Assert.Equal(resource.Status.ToString(), result.Status);
             Assert.Equal(resource.Cost, result.Cost);
             Assert.Equal(resource.Capacity, result.Capacity);
-            Assert.Equal(resource.Area, result.Area);
+            Assert.Null(result.ExpertiseArea);
             Assert.Equal(resource.QualityScore, result.QualityScore);
+            Assert.Equal(resource.Version, result.Version);
         }
 
         [Fact]

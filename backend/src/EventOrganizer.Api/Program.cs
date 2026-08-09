@@ -63,6 +63,12 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole(ApplicationRoles.Admin));
 
     options.AddPolicy(
+        AuthorizationPolicies.CanBrowseResources,
+        policy => policy.RequireRole(
+            ApplicationRoles.Organizer,
+            ApplicationRoles.Admin));
+
+    options.AddPolicy(
         AuthorizationPolicies.CanCreateResourceReservations,
         policy => policy.RequireRole(
             ApplicationRoles.Organizer,

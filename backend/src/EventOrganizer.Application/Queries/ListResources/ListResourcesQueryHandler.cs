@@ -1,4 +1,5 @@
-﻿using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Common.Mapping;
 using EventOrganizer.Application.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,22 +20,14 @@ namespace EventOrganizer.Application.Queries.ListResources
             ListResourcesQuery request,
             CancellationToken cancellationToken)
         {
-            return await _dbContext.Resources
+            var resources = await _dbContext.Resources
                 .AsNoTracking()
                 .OrderBy(resource => resource.Name)
-                .Select(resource => new ResourceResponse(
-                    resource.Id,
-                    resource.Name,
-                    resource.Description,
-                    resource.Type.ToString(),
-                    resource.Status.ToString(),
-                    resource.Cost,
-                    resource.Capacity,
-                    resource.Area,
-                    resource.QualityScore,
-                    resource.CreatedAtUtc,
-                    resource.UpdatedAtUtc))
                 .ToListAsync(cancellationToken);
+
+            return resources
+                .Select(ResourceResponseMapper.ToResponse)
+                .ToArray();
         }
     }
 }

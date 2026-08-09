@@ -160,7 +160,7 @@ namespace EventOrganizer.Tests.Api
                 organizerUserId,
                 DateTime.UtcNow);
 
-            var venue = Resource.Create(
+            var venue = TestResourceFactory.Create(
                 $"Conference Hall {Guid.NewGuid():N}",
                 "A hall suitable for conferences.",
                 ResourceType.Venue,
@@ -170,7 +170,7 @@ namespace EventOrganizer.Tests.Api
                 5,
                 DateTime.UtcNow);
 
-            var speaker = Resource.Create(
+            var speaker = TestResourceFactory.Create(
                 $"Architecture Speaker {Guid.NewGuid():N}",
                 "A speaker for architecture events.",
                 ResourceType.Speaker,

@@ -18,15 +18,39 @@ namespace EventOrganizer.Application.Commands.CreateResource
             CreateResourceCommand request,
             CancellationToken cancellationToken)
         {
-            var resource = Resource.Create(
-                request.Name,
-                request.Description,
-                request.Type,
-                request.Cost,
-                request.Capacity,
-                request.Area,
-                request.QualityScore,
-                DateTime.UtcNow);
+            var createdAtUtc = DateTime.UtcNow;
+            Resource resource = request.Type switch
+            {
+                ResourceType.Venue => Venue.Create(
+                    request.Name,
+                    request.Description,
+                    request.Cost,
+                    request.Capacity!.Value,
+                    request.QualityScore,
+                    createdAtUtc),
+
+                ResourceType.Speaker => Speaker.Create(
+                    request.Name,
+                    request.Description,
+                    request.Cost,
+                    request.ExpertiseArea!,
+                    request.QualityScore,
+                    createdAtUtc),
+
+                ResourceType.EquipmentPackage => EquipmentPackage.Create(
+                    request.Name,
+                    request.Description,
+                    request.Cost,
+                    request.ProviderName!,
+                    request.SupportedCapacity!.Value,
+                    request.ServiceArea!,
+                    request.IncludesTechnicalSupport!.Value,
+                    request.ContentsSummary!,
+                    request.QualityScore,
+                    createdAtUtc),
+
+                _ => throw new InvalidOperationException("Unsupported resource type."),
+            };
 
             _dbContext.Resources.Add(resource);
             await _dbContext.SaveChangesAsync(cancellationToken);

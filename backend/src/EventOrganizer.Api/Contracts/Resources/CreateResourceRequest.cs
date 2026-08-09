@@ -7,7 +7,12 @@ namespace EventOrganizer.Api.Contracts.Resources
         string Description,
         ResourceType Type,
         decimal Cost,
+        int QualityScore,
         int? Capacity,
-        string? Area,
-        int QualityScore);
+        string? ExpertiseArea,
+        string? ProviderName,
+        int? SupportedCapacity,
+        string? ServiceArea,
+        bool? IncludesTechnicalSupport,
+        string? ContentsSummary);
 }

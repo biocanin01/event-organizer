@@ -1,29 +1,26 @@
 namespace EventOrganizer.Domain.Resources
 {
-    public sealed class Resource
+    public abstract class Resource
     {
-        private Resource() { }
+        private protected Resource() { }
 
-        private Resource(
+        private protected Resource(
             Guid id,
             string name,
             string description,
             ResourceType type,
             decimal cost,
-            int? capacity,
-            string? area,
             int qualityScore,
             DateTime createdAtUtc)
         {
             Id = id;
-            Name = name;
-            Description = description;
+            Name = NormalizeRequired(name, nameof(name), "Resource name is required.");
+            Description = NormalizeDescription(description);
             Type = type;
-            Cost = cost;
-            Capacity = capacity;
-            Area = NormalizeArea(area);
-            QualityScore = qualityScore;
+            Cost = ValidateCost(cost);
+            QualityScore = ValidateQualityScore(qualityScore);
             Status = ResourceStatus.Available;
+            Version = 1;
             CreatedAtUtc = createdAtUtc;
         }
 
@@ -39,85 +36,81 @@ namespace EventOrganizer.Domain.Resources
 
         public decimal Cost { get; private set; }
 
-        public int? Capacity { get; private set; }
-
-        public string? Area { get; private set; }
-
         public int QualityScore { get; private set; }
+
+        public int Version { get; private set; }
 
         public DateTime CreatedAtUtc { get; private set; }
 
         public DateTime? UpdatedAtUtc { get; private set; }
 
-        public static Resource Create(
-            string name,
-            string description,
-            ResourceType type,
-            decimal cost,
-            int? capacity,
-            string? area,
-            int qualityScore,
-            DateTime createdAtUtc)
-        {
-            ValidateName(name);
-            ValidateCost(cost);
-            ValidateCapacity(capacity);
-            ValidateQualityScore(qualityScore);
-
-            return new Resource(
-                Guid.NewGuid(),
-                name.Trim(),
-                description.Trim(),
-                type,
-                cost,
-                capacity,
-                area,
-                qualityScore,
-                createdAtUtc);
-        }
-
-        public void UpdateDetails(
-            string name,
-            string description,
-            decimal cost,
-            int? capacity,
-            string? area,
-            int qualityScore,
-            DateTime updatedAtUtc)
-        {
-            EnsureNotArchived();
-            ValidateName(name);
-            ValidateCost(cost);
-            ValidateCapacity(capacity);
-            ValidateQualityScore(qualityScore);
-
-            Name = name.Trim();
-            Description = description.Trim();
-            Cost = cost;
-            Capacity = capacity;
-            Area = NormalizeArea(area);
-            QualityScore = qualityScore;
-            UpdatedAtUtc = updatedAtUtc;
-        }
-
         public void MarkUnavailable(DateTime updatedAtUtc)
         {
             EnsureNotArchived();
             Status = ResourceStatus.Unavailable;
-            UpdatedAtUtc = updatedAtUtc;
+            Touch(updatedAtUtc);
         }
 
         public void MarkAvailable(DateTime updatedAtUtc)
         {
             EnsureNotArchived();
             Status = ResourceStatus.Available;
-            UpdatedAtUtc = updatedAtUtc;
+            Touch(updatedAtUtc);
         }
 
         public void Archive(DateTime updatedAtUtc)
         {
             Status = ResourceStatus.Archived;
-            UpdatedAtUtc = updatedAtUtc;
+            Touch(updatedAtUtc);
+        }
+
+        private protected void UpdateSharedDetails(
+            string name,
+            string description,
+            decimal cost,
+            int qualityScore,
+            DateTime updatedAtUtc)
+        {
+            EnsureNotArchived();
+            var normalizedName = NormalizeRequired(
+                name,
+                nameof(name),
+                "Resource name is required.");
+            var normalizedDescription = NormalizeDescription(description);
+            var validatedCost = ValidateCost(cost);
+            var validatedQualityScore = ValidateQualityScore(qualityScore);
+
+            Name = normalizedName;
+            Description = normalizedDescription;
+            Cost = validatedCost;
+            QualityScore = validatedQualityScore;
+            Touch(updatedAtUtc);
+        }
+
+        private protected static int ValidatePositive(
+            int value,
+            string parameterName,
+            string errorMessage)
+        {
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, errorMessage);
+            }
+
+            return value;
+        }
+
+        private protected static string NormalizeRequired(
+            string value,
+            string parameterName,
+            string errorMessage)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException(errorMessage, parameterName);
+            }
+
+            return value.Trim();
         }
 
         private void EnsureNotArchived()
@@ -128,43 +121,38 @@ namespace EventOrganizer.Domain.Resources
             }
         }
 
-        private static void ValidateName(string name)
+        private void Touch(DateTime updatedAtUtc)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Resource name is required.", nameof(name));
-            }
+            UpdatedAtUtc = updatedAtUtc;
+            Version++;
         }
 
-        private static void ValidateCost(decimal cost)
+        private static decimal ValidateCost(decimal cost)
         {
             if (cost < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(cost), "Resource cost cannot be negative.");
             }
+
+            return cost;
         }
 
-        private static void ValidateCapacity(int? capacity)
+        private static string NormalizeDescription(string description)
         {
-            if (capacity.HasValue && capacity.Value <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), "Resource capacity must be positive.");
-            }
+            return description?.Trim()
+                ?? throw new ArgumentNullException(nameof(description));
         }
 
-        private static void ValidateQualityScore(int qualityScore)
+        private static int ValidateQualityScore(int qualityScore)
         {
             if (qualityScore is < 1 or > 5)
             {
-                throw new ArgumentOutOfRangeException(nameof(qualityScore), "Resource quality score must be between 1 and 5.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(qualityScore),
+                    "Resource quality score must be between 1 and 5.");
             }
-        }
 
-        private static string? NormalizeArea(string? area)
-        {
-            return string.IsNullOrWhiteSpace(area)
-                ? null
-                : area.Trim();
+            return qualityScore;
         }
     }
 }

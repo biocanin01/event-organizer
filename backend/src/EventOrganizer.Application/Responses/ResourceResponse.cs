@@ -7,9 +7,15 @@ namespace EventOrganizer.Application.Responses
         string Type,
         string Status,
         decimal Cost,
-        int? Capacity,
-        string? Area,
         int QualityScore,
+        int Version,
+        int? Capacity,
+        string? ExpertiseArea,
+        string? ProviderName,
+        int? SupportedCapacity,
+        string? ServiceArea,
+        bool? IncludesTechnicalSupport,
+        string? ContentsSummary,
         DateTime CreatedAtUtc,
         DateTime? UpdatedAtUtc);
 }

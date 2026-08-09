@@ -17,8 +17,8 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var firstSpeaker = CreateCandidate("Senior Speaker", ResourceType.Speaker, 200m, qualityScore: 5);
             var secondSpeaker = CreateCandidate("Domain Speaker", ResourceType.Speaker, 150m, qualityScore: 4);
             var lowerQualitySpeaker = CreateCandidate("Junior Speaker", ResourceType.Speaker, 100m, qualityScore: 2);
-            var affordableEquipment = CreateCandidate("Projector", ResourceType.Equipment, 100m, qualityScore: 3);
-            var expensiveEquipment = CreateCandidate("Recording Kit", ResourceType.Equipment, 200m, qualityScore: 4);
+            var affordableEquipment = CreateCandidate("Projector", ResourceType.EquipmentPackage, 100m, qualityScore: 3);
+            var expensiveEquipment = CreateCandidate("Recording Kit", ResourceType.EquipmentPackage, 200m, qualityScore: 4);
 
             var result = _optimizer.Optimize(
                 eventItem,
