@@ -1,4 +1,6 @@
 ﻿using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Bookings;
+using EventOrganizer.Domain.Resources;
 using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
 using Microsoft.Data.Sqlite;
@@ -69,6 +71,39 @@ namespace EventOrganizer.Tests.Application
             await DbContext.SaveChangesAsync();
 
             return eventItem;
+        }
+
+        protected async Task<EventResourceBooking> CreateBookingAsync(
+            Event eventItem,
+            params Resource[] resources)
+        {
+            var booking = EventResourceBooking.Create(
+                eventItem.Id,
+                DateTime.UtcNow);
+
+            foreach (var resource in resources)
+            {
+                booking.AddResource(resource.Id, resource.Type, DateTime.UtcNow);
+            }
+
+            DbContext.EventResourceBookings.Add(booking);
+            await DbContext.SaveChangesAsync();
+
+            return booking;
+        }
+
+        protected async Task<EventResourceBooking> SetBookingStatusAsync(
+            Guid bookingId,
+            EventResourceBookingStatus status)
+        {
+            await DbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE EventResourceBookings SET Status = {status.ToString()} WHERE Id = {bookingId}");
+
+            DbContext.ChangeTracker.Clear();
+
+            return await DbContext.EventResourceBookings
+                .Include(booking => booking.Items)
+                .SingleAsync(booking => booking.Id == bookingId);
         }
 
         public void Dispose()

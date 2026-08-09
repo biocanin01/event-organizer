@@ -1,4 +1,5 @@
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
@@ -27,12 +28,14 @@ namespace EventOrganizer.Application.Recommendations.Candidates
                     && (resource.Type == ResourceType.Venue
                         || resource.Type == ResourceType.Speaker
                         || resource.Type == ResourceType.EquipmentPackage))
-                .Where(resource => !_dbContext.ResourceReservations.Any(reservation =>
-                    reservation.ResourceId == resource.Id
-                    && reservation.StartsAtUtc < eventItem.EndsAtUtc
-                    && reservation.EndsAtUtc > eventItem.StartsAtUtc
-                    && (reservation.Status == ResourceReservationStatus.Pending
-                        || reservation.Status == ResourceReservationStatus.Confirmed)))
+                .Where(resource => !_dbContext.EventResourceBookings.Any(booking =>
+                    (booking.Status == EventResourceBookingStatus.Submitted
+                        || booking.Status == EventResourceBookingStatus.Approved)
+                    && booking.Items.Any(item => item.ResourceId == resource.Id)
+                    && _dbContext.Events.Any(bookedEvent =>
+                        bookedEvent.Id == booking.EventId
+                        && bookedEvent.StartsAtUtc < eventItem.EndsAtUtc
+                        && bookedEvent.EndsAtUtc > eventItem.StartsAtUtc)))
                 .OrderBy(resource => resource.Name)
                 .ToListAsync(cancellationToken);
 

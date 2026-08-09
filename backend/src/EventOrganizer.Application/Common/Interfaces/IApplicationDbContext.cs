@@ -1,3 +1,4 @@
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Resources;
 using EventOrganizer.Domain.Users;
@@ -11,7 +12,7 @@ namespace EventOrganizer.Application.Common.Interfaces
 
         DbSet<Resource> Resources { get; }
 
-        DbSet<ResourceReservation> ResourceReservations { get; }
+        DbSet<EventResourceBooking> EventResourceBookings { get; }
 
         DbSet<OrganizerRoleRequest> OrganizerRoleRequests { get; }
 

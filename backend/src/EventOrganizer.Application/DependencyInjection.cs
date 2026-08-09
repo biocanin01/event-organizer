@@ -21,8 +21,6 @@ namespace EventOrganizer.Application
 
             services.AddScoped<EventAuthorizationService>();
 
-            services.AddScoped<ResourceReservationAuthorizationService>();
-
             services.AddScoped<IResourceCandidateProvider, ResourceCandidateProvider>();
 
             services.AddScoped<IRecommendationOptimizer, ConstraintRecommendationOptimizer>();

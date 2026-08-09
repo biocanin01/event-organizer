@@ -10,12 +10,6 @@ namespace EventOrganizer.Api.Authorization
 
         public const string CanBrowseResources = "CanBrowseResources";
 
-        public const string CanCreateResourceReservations = "CanCreateResourceReservations";
-
-        public const string CanManageResourceReservations = "CanManageResourceReservations";
-
-        public const string CanCancelResourceReservations = "CanCancelResourceReservations";
-
         public const string CanRequestOrganizerRole = "CanRequestOrganizerRole";
 
         public const string CanManageOrganizerRoleRequests = "CanManageOrganizerRoleRequests";

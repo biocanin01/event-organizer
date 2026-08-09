@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Commands.ArchiveResource;
 using EventOrganizer.Application.Common.Exceptions;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,25 +38,14 @@ namespace EventOrganizer.Tests.Application.Resources
             await Assert.ThrowsAsync<NotFoundException>(action);
         }
 
-        [Fact]
-        public async Task Handle_WhenResourceHasFuturePendingReservation_ThrowsConflictException()
+        [Theory]
+        [InlineData(EventResourceBookingStatus.Submitted)]
+        [InlineData(EventResourceBookingStatus.Approved)]
+        public async Task Handle_WhenResourceBelongsToActiveBooking_ThrowsConflictException(
+            EventResourceBookingStatus status)
         {
             var resource = await CreateResourceAsync();
-            await CreateReservationAsync(resource.Id, ResourceReservationStatus.Pending);
-            var handler = new ArchiveResourceCommandHandler(DbContext);
-
-            var action = () => handler.Handle(
-                new ArchiveResourceCommand(resource.Id),
-                CancellationToken.None);
-
-            await Assert.ThrowsAsync<ConflictException>(action);
-        }
-
-        [Fact]
-        public async Task Handle_WhenResourceHasFutureConfirmedReservation_ThrowsConflictException()
-        {
-            var resource = await CreateResourceAsync();
-            await CreateReservationAsync(resource.Id, ResourceReservationStatus.Confirmed);
+            await CreateBookingWithStatusAsync(resource, status);
             var handler = new ArchiveResourceCommandHandler(DbContext);
 
             var action = () => handler.Handle(
@@ -66,20 +56,27 @@ namespace EventOrganizer.Tests.Application.Resources
         }
 
         [Theory]
-        [InlineData(ResourceReservationStatus.Rejected)]
-        [InlineData(ResourceReservationStatus.Cancelled)]
-        public async Task Handle_WhenResourceHasNonBlockingReservation_ArchivesResource(
-            ResourceReservationStatus status)
+        [InlineData(EventResourceBookingStatus.Draft)]
+        [InlineData(EventResourceBookingStatus.Rejected)]
+        [InlineData(EventResourceBookingStatus.Expired)]
+        [InlineData(EventResourceBookingStatus.Cancelled)]
+        public async Task Handle_WhenResourceBelongsToNonBlockingBooking_ArchivesResource(
+            EventResourceBookingStatus status)
         {
             var resource = await CreateResourceAsync();
-            await CreateReservationAsync(resource.Id, status);
+            await CreateBookingWithStatusAsync(resource, status);
             var handler = new ArchiveResourceCommandHandler(DbContext);
 
             await handler.Handle(
                 new ArchiveResourceCommand(resource.Id),
                 CancellationToken.None);
 
-            Assert.Equal(ResourceStatus.Archived, resource.Status);
+            DbContext.ChangeTracker.Clear();
+
+            var archivedResource = await DbContext.Resources
+                .SingleAsync(item => item.Id == resource.Id);
+
+            Assert.Equal(ResourceStatus.Archived, archivedResource.Status);
         }
 
         private async Task<Resource> CreateResourceAsync()
@@ -100,35 +97,18 @@ namespace EventOrganizer.Tests.Application.Resources
             return resource;
         }
 
-        private async Task CreateReservationAsync(
-            Guid resourceId,
-            ResourceReservationStatus status)
+        private async Task CreateBookingWithStatusAsync(
+            Resource resource,
+            EventResourceBookingStatus status)
         {
             var eventEntity = await CreateEventAsync(
                 startsAtUtc: DateTime.UtcNow.AddDays(10));
+            var booking = await CreateBookingAsync(eventEntity, resource);
 
-            var reservation = ResourceReservation.Create(
-                eventEntity.Id,
-                resourceId,
-                DateTime.UtcNow.AddDays(10),
-                DateTime.UtcNow.AddDays(10).AddHours(2),
-                DateTime.UtcNow);
-
-            if (status == ResourceReservationStatus.Confirmed)
+            if (status != EventResourceBookingStatus.Draft)
             {
-                reservation.Confirm(DateTime.UtcNow);
+                await SetBookingStatusAsync(booking.Id, status);
             }
-            else if (status == ResourceReservationStatus.Rejected)
-            {
-                reservation.Reject(DateTime.UtcNow);
-            }
-            else if (status == ResourceReservationStatus.Cancelled)
-            {
-                reservation.Cancel(DateTime.UtcNow);
-            }
-
-            DbContext.ResourceReservations.Add(reservation);
-            await DbContext.SaveChangesAsync();
         }
     }
 }

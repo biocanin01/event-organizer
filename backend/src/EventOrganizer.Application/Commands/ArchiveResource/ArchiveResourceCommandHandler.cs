@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Resources;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -32,19 +33,18 @@ namespace EventOrganizer.Application.Commands.ArchiveResource
 
             var now = DateTime.UtcNow;
 
-            var hasActiveReservations = await _dbContext.ResourceReservations
+            var hasActiveBookings = await _dbContext.EventResourceBookings
                 .AnyAsync(
-                    reservation =>
-                        reservation.ResourceId == request.ResourceId
-                        && reservation.EndsAtUtc > now
-                        && (reservation.Status == ResourceReservationStatus.Pending
-                            || reservation.Status == ResourceReservationStatus.Confirmed),
+                    booking =>
+                        (booking.Status == EventResourceBookingStatus.Submitted
+                            || booking.Status == EventResourceBookingStatus.Approved)
+                        && booking.Items.Any(item => item.ResourceId == request.ResourceId),
                     cancellationToken);
 
-            if (hasActiveReservations)
+            if (hasActiveBookings)
             {
                 throw new ConflictException(
-                    "Resource cannot be archived while it has active or future reservations.");
+                    "Resource cannot be archived while it belongs to an active booking.");
             }
 
             resource.Archive(now);

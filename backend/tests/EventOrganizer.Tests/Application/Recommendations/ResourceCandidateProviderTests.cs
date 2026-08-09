@@ -1,4 +1,5 @@
 using EventOrganizer.Application.Recommendations.Candidates;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Resources;
 
@@ -81,24 +82,24 @@ namespace EventOrganizer.Tests.Application.Recommendations
         }
 
         [Theory]
-        [InlineData(ResourceReservationStatus.Pending, false)]
-        [InlineData(ResourceReservationStatus.Confirmed, false)]
-        [InlineData(ResourceReservationStatus.Rejected, true)]
-        [InlineData(ResourceReservationStatus.Cancelled, true)]
-        public async Task GetCandidatesAsync_UsesReservationStatusToDetermineAvailability(
-            ResourceReservationStatus reservationStatus,
+        [InlineData(EventResourceBookingStatus.Submitted, false)]
+        [InlineData(EventResourceBookingStatus.Approved, false)]
+        [InlineData(EventResourceBookingStatus.Draft, true)]
+        [InlineData(EventResourceBookingStatus.Rejected, true)]
+        [InlineData(EventResourceBookingStatus.Expired, true)]
+        [InlineData(EventResourceBookingStatus.Cancelled, true)]
+        public async Task GetCandidatesAsync_UsesBookingStatusToDetermineAvailability(
+            EventResourceBookingStatus bookingStatus,
             bool shouldBeIncluded)
         {
             var eventItem = await CreateEventAsync();
             var equipment = await CreateResourceAsync(
                 "Conference Projector",
                 ResourceType.EquipmentPackage);
-            await CreateReservationAsync(
-                eventItem,
+            await CreateBookingForResourceAsync(
                 equipment,
-                reservationStatus,
-                eventItem.StartsAtUtc.AddHours(1),
-                eventItem.EndsAtUtc.AddHours(-1));
+                bookingStatus,
+                eventItem.StartsAtUtc.AddHours(1));
 
             var provider = new ResourceCandidateProvider(DbContext);
 
@@ -112,18 +113,16 @@ namespace EventOrganizer.Tests.Application.Recommendations
         }
 
         [Fact]
-        public async Task GetCandidatesAsync_IncludesResourceWithNonOverlappingReservation()
+        public async Task GetCandidatesAsync_IncludesResourceWithNonOverlappingBooking()
         {
             var eventItem = await CreateEventAsync();
             var equipment = await CreateResourceAsync(
                 "Available Projector",
                 ResourceType.EquipmentPackage);
-            await CreateReservationAsync(
-                eventItem,
+            await CreateBookingForResourceAsync(
                 equipment,
-                ResourceReservationStatus.Confirmed,
-                eventItem.StartsAtUtc.AddHours(-2),
-                eventItem.StartsAtUtc);
+                EventResourceBookingStatus.Approved,
+                eventItem.StartsAtUtc.AddHours(-4));
 
             var provider = new ResourceCandidateProvider(DbContext);
 
@@ -156,35 +155,23 @@ namespace EventOrganizer.Tests.Application.Recommendations
             return resource;
         }
 
-        private async Task CreateReservationAsync(
-            Event eventItem,
+        private async Task CreateBookingForResourceAsync(
             Resource resource,
-            ResourceReservationStatus status,
-            DateTime startsAtUtc,
-            DateTime endsAtUtc)
+            EventResourceBookingStatus status,
+            DateTime startsAtUtc)
         {
-            var reservation = ResourceReservation.Create(
-                eventItem.Id,
-                resource.Id,
-                startsAtUtc,
-                endsAtUtc,
-                DateTime.UtcNow);
+            var organizerUserId = await CreateOrganizerUserAsync(
+                $"booking-{Guid.NewGuid():N}@example.com");
+            var bookedEvent = await CreateEventAsync(
+                organizerUserId,
+                $"Booked Event {Guid.NewGuid():N}",
+                startsAtUtc);
+            var booking = await CreateBookingAsync(bookedEvent, resource);
 
-            if (status == ResourceReservationStatus.Confirmed)
+            if (status != EventResourceBookingStatus.Draft)
             {
-                reservation.Confirm(DateTime.UtcNow);
+                await SetBookingStatusAsync(booking.Id, status);
             }
-            else if (status == ResourceReservationStatus.Rejected)
-            {
-                reservation.Reject(DateTime.UtcNow);
-            }
-            else if (status == ResourceReservationStatus.Cancelled)
-            {
-                reservation.Cancel(DateTime.UtcNow);
-            }
-
-            DbContext.ResourceReservations.Add(reservation);
-            await DbContext.SaveChangesAsync();
         }
     }
 }

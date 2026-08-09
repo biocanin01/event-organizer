@@ -1,4 +1,5 @@
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Resources;
@@ -18,7 +19,7 @@ namespace EventOrganizer.Infrastructure.Persistance
 
         public DbSet<Resource> Resources => Set<Resource>();
 
-        public DbSet<ResourceReservation> ResourceReservations => Set<ResourceReservation>();
+        public DbSet<EventResourceBooking> EventResourceBookings => Set<EventResourceBooking>();
 
         public DbSet<Registration> Registrations => Set<Registration>();
 
