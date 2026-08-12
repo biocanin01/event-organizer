@@ -27,5 +27,28 @@ namespace EventOrganizer.Application.Bookings
 
             return EventResourceBookingResponseMapper.ToResponse(booking, resources);
         }
+
+        public static async Task<IReadOnlyList<EventResourceBookingResponse>> CreateManyAsync(
+            IApplicationDbContext dbContext,
+            IReadOnlyCollection<EventResourceBooking> bookings,
+            CancellationToken cancellationToken)
+        {
+            var resourceIds = bookings
+                .SelectMany(booking => booking.Items)
+                .Select(item => item.ResourceId)
+                .Distinct()
+                .ToArray();
+
+            var resources = resourceIds.Length == 0
+                ? Array.Empty<Resource>()
+                : await dbContext.Resources
+                    .AsNoTracking()
+                    .Where(resource => resourceIds.Contains(resource.Id))
+                    .ToArrayAsync(cancellationToken);
+
+            return bookings
+                .Select(booking => EventResourceBookingResponseMapper.ToResponse(booking, resources))
+                .ToArray();
+        }
     }
 }

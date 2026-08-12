@@ -83,6 +83,10 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole(ApplicationRoles.Admin));
 
     options.AddPolicy(
+        AuthorizationPolicies.CanManageBookings,
+        policy => policy.RequireRole(ApplicationRoles.Admin));
+
+    options.AddPolicy(
         AuthorizationPolicies.CanManageUsers,
         policy => policy.RequireRole(ApplicationRoles.Admin));
 });

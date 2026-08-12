@@ -35,6 +35,13 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
 
             builder.Property(booking => booking.HoldExpiresAtUtc);
 
+            builder.Property(booking => booking.DecisionReason)
+                .HasMaxLength(500);
+
+            builder.Property(booking => booking.DecidedAtUtc);
+
+            builder.Property(booking => booking.DecidedByUserId);
+
             builder.HasOne<Event>()
                 .WithOne()
                 .HasForeignKey<EventResourceBooking>(booking => booking.EventId)

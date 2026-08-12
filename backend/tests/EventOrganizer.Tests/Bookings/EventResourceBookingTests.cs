@@ -160,6 +160,83 @@ namespace EventOrganizer.Tests.Bookings
             Assert.Equal(3, booking.Version);
         }
 
+        [Fact]
+        public void Approve_WhenSubmittedHoldIsActive_ApprovesAndStoresDecision()
+        {
+            var booking = CreateBooking();
+            var submittedAtUtc = DateTime.UtcNow;
+            var adminUserId = Guid.NewGuid();
+            booking.Submit(submittedAtUtc, submittedAtUtc.AddHours(48));
+
+            booking.Approve(adminUserId, submittedAtUtc.AddHours(1));
+
+            Assert.Equal(EventResourceBookingStatus.Approved, booking.Status);
+            Assert.Equal(adminUserId, booking.DecidedByUserId);
+            Assert.Equal(submittedAtUtc.AddHours(1), booking.DecidedAtUtc);
+            Assert.Null(booking.DecisionReason);
+            Assert.Equal(3, booking.Version);
+        }
+
+        [Fact]
+        public void Approve_WhenHoldExpired_DoesNotChangeBooking()
+        {
+            var booking = CreateBooking();
+            var submittedAtUtc = DateTime.UtcNow;
+            booking.Submit(submittedAtUtc, submittedAtUtc.AddHours(48));
+            var version = booking.Version;
+
+            var action = () => booking.Approve(Guid.NewGuid(), submittedAtUtc.AddHours(49));
+
+            Assert.Throws<InvalidOperationException>(action);
+            Assert.Equal(EventResourceBookingStatus.Submitted, booking.Status);
+            Assert.Equal(version, booking.Version);
+        }
+
+        [Fact]
+        public void Reject_WhenSubmitted_RejectsAndStoresTrimmedDecision()
+        {
+            var booking = CreateBooking();
+            var submittedAtUtc = DateTime.UtcNow;
+            var adminUserId = Guid.NewGuid();
+            booking.Submit(submittedAtUtc, submittedAtUtc.AddHours(48));
+
+            booking.Reject(adminUserId, "  Missing contract.  ", submittedAtUtc.AddHours(1));
+
+            Assert.Equal(EventResourceBookingStatus.Rejected, booking.Status);
+            Assert.Equal("Missing contract.", booking.DecisionReason);
+            Assert.Equal(adminUserId, booking.DecidedByUserId);
+            Assert.Equal(3, booking.Version);
+        }
+
+        [Fact]
+        public void Expire_WhenSubmittedHoldExpired_ExpiresAndIncrementsVersion()
+        {
+            var booking = CreateBooking();
+            var submittedAtUtc = DateTime.UtcNow;
+            booking.Submit(submittedAtUtc, submittedAtUtc.AddHours(48));
+
+            var expired = booking.Expire(submittedAtUtc.AddHours(49));
+
+            Assert.True(expired);
+            Assert.Equal(EventResourceBookingStatus.Expired, booking.Status);
+            Assert.Equal(3, booking.Version);
+        }
+
+        [Fact]
+        public void Expire_WhenHoldIsActive_DoesNotChangeBooking()
+        {
+            var booking = CreateBooking();
+            var submittedAtUtc = DateTime.UtcNow;
+            booking.Submit(submittedAtUtc, submittedAtUtc.AddHours(48));
+            var version = booking.Version;
+
+            var expired = booking.Expire(submittedAtUtc.AddHours(1));
+
+            Assert.False(expired);
+            Assert.Equal(EventResourceBookingStatus.Submitted, booking.Status);
+            Assert.Equal(version, booking.Version);
+        }
+
         private static EventResourceBooking CreateBooking()
         {
             return EventResourceBooking.Create(Guid.NewGuid(), DateTime.UtcNow);

@@ -36,6 +36,12 @@ namespace EventOrganizer.Domain.Bookings
 
         public DateTime? HoldExpiresAtUtc { get; private set; }
 
+        public string? DecisionReason { get; private set; }
+
+        public DateTime? DecidedAtUtc { get; private set; }
+
+        public Guid? DecidedByUserId { get; private set; }
+
         public IReadOnlyCollection<EventResourceBookingItem> Items => _items.AsReadOnly();
 
         public static EventResourceBooking Create(
@@ -202,6 +208,7 @@ namespace EventOrganizer.Domain.Bookings
             Status = EventResourceBookingStatus.Submitted;
             SubmittedAtUtc = submittedAtUtc;
             HoldExpiresAtUtc = holdExpiresAtUtc;
+            ClearDecision();
             Touch(submittedAtUtc);
         }
 
@@ -230,7 +237,57 @@ namespace EventOrganizer.Domain.Bookings
             Status = EventResourceBookingStatus.Draft;
             SubmittedAtUtc = null;
             HoldExpiresAtUtc = null;
+            ClearDecision();
             Touch(updatedAtUtc);
+        }
+
+        public void Approve(Guid adminUserId, DateTime decidedAtUtc)
+        {
+            EnsureSubmitted();
+            ValidateAdminUserId(adminUserId);
+
+            if (HoldExpiresAtUtc is null || HoldExpiresAtUtc <= decidedAtUtc)
+            {
+                throw new InvalidOperationException(
+                    "Only submitted bookings with an active hold can be approved.");
+            }
+
+            Status = EventResourceBookingStatus.Approved;
+            DecisionReason = null;
+            DecidedAtUtc = decidedAtUtc;
+            DecidedByUserId = adminUserId;
+            Touch(decidedAtUtc);
+        }
+
+        public void Reject(Guid adminUserId, string? decisionReason, DateTime decidedAtUtc)
+        {
+            EnsureSubmitted();
+            ValidateAdminUserId(adminUserId);
+
+            Status = EventResourceBookingStatus.Rejected;
+            DecisionReason = string.IsNullOrWhiteSpace(decisionReason)
+                ? null
+                : decisionReason.Trim();
+            DecidedAtUtc = decidedAtUtc;
+            DecidedByUserId = adminUserId;
+            Touch(decidedAtUtc);
+        }
+
+        public bool Expire(DateTime updatedAtUtc)
+        {
+            if (Status != EventResourceBookingStatus.Submitted)
+            {
+                return false;
+            }
+
+            if (HoldExpiresAtUtc is null || HoldExpiresAtUtc > updatedAtUtc)
+            {
+                return false;
+            }
+
+            Status = EventResourceBookingStatus.Expired;
+            Touch(updatedAtUtc);
+            return true;
         }
 
         private void EnsureDraft()
@@ -241,10 +298,25 @@ namespace EventOrganizer.Domain.Bookings
             }
         }
 
+        private void EnsureSubmitted()
+        {
+            if (Status != EventResourceBookingStatus.Submitted)
+            {
+                throw new InvalidOperationException("Only submitted bookings can be decided.");
+            }
+        }
+
         private void Touch(DateTime updatedAtUtc)
         {
             UpdatedAtUtc = updatedAtUtc;
             Version++;
+        }
+
+        private void ClearDecision()
+        {
+            DecisionReason = null;
+            DecidedAtUtc = null;
+            DecidedByUserId = null;
         }
 
         private static void ValidateResourceId(Guid resourceId)
@@ -252,6 +324,14 @@ namespace EventOrganizer.Domain.Bookings
             if (resourceId == Guid.Empty)
             {
                 throw new ArgumentException("Resource id is required.", nameof(resourceId));
+            }
+        }
+
+        private static void ValidateAdminUserId(Guid adminUserId)
+        {
+            if (adminUserId == Guid.Empty)
+            {
+                throw new ArgumentException("Admin user id is required.", nameof(adminUserId));
             }
         }
     }
