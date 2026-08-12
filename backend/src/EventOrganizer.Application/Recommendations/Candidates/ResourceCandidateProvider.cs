@@ -21,6 +21,8 @@ namespace EventOrganizer.Application.Recommendations.Candidates
         {
             ArgumentNullException.ThrowIfNull(eventItem);
 
+            var now = DateTime.UtcNow;
+
             var resources = await _dbContext.Resources
                 .AsNoTracking()
                 .Where(resource =>
@@ -29,8 +31,9 @@ namespace EventOrganizer.Application.Recommendations.Candidates
                         || resource.Type == ResourceType.Speaker
                         || resource.Type == ResourceType.EquipmentPackage))
                 .Where(resource => !_dbContext.EventResourceBookings.Any(booking =>
-                    (booking.Status == EventResourceBookingStatus.Submitted
-                        || booking.Status == EventResourceBookingStatus.Approved)
+                    (booking.Status == EventResourceBookingStatus.Approved
+                        || (booking.Status == EventResourceBookingStatus.Submitted
+                            && booking.HoldExpiresAtUtc > now))
                     && booking.Items.Any(item => item.ResourceId == resource.Id)
                     && _dbContext.Events.Any(bookedEvent =>
                         bookedEvent.Id == booking.EventId

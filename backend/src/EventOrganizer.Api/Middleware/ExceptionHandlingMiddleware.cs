@@ -31,37 +31,49 @@ namespace EventOrganizer.Api.Middleware
 
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            var (statusCode, title, errors) = exception switch
+            var (statusCode, title, errors, conflicts) = exception switch
             {
                 ValidationException validationException => (
                     HttpStatusCode.BadRequest,
                     "Validation failed.",
-                    validationException.Errors.Select(error => error.ErrorMessage).ToArray()),
+                    validationException.Errors.Select(error => error.ErrorMessage).ToArray(),
+                    null),
+
+                BookingConflictException bookingConflictException => (
+                    HttpStatusCode.Conflict,
+                    exception.Message,
+                    Array.Empty<string>(),
+                    bookingConflictException.Conflicts),
 
                 ConflictException => (
                     HttpStatusCode.Conflict,
                     exception.Message,
-                    Array.Empty<string>()),
+                    Array.Empty<string>(),
+                    null),
 
                 UnauthorizedException => (
                     HttpStatusCode.Unauthorized,
                     exception.Message,
-                    Array.Empty<string>()),
+                    Array.Empty<string>(),
+                    null),
 
                 ForbiddenException => (
                     HttpStatusCode.Forbidden,
                     exception.Message,
-                    Array.Empty<string>()),
+                    Array.Empty<string>(),
+                    null),
 
                 NotFoundException => (
                     HttpStatusCode.NotFound,
                     exception.Message,
-                    Array.Empty<string>()),
+                    Array.Empty<string>(),
+                    null),
 
                 _ => (
                     HttpStatusCode.InternalServerError,
                     "An unexpected error occurred.",
-                    Array.Empty<string>()),
+                    Array.Empty<string>(),
+                    null),
             };
 
             if (statusCode == HttpStatusCode.InternalServerError)
@@ -77,6 +89,7 @@ namespace EventOrganizer.Api.Middleware
                 status = context.Response.StatusCode,
                 title,
                 errors,
+                conflicts,
             });
         }
     }

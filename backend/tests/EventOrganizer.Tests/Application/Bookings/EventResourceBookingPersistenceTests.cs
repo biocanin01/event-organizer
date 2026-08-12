@@ -61,6 +61,50 @@ namespace EventOrganizer.Tests.Application.Bookings
         }
 
         [Fact]
+        public async Task SaveChanges_WhenTwoContextsChangeSameVersion_SecondSaveThrowsConcurrencyException()
+        {
+            var eventItem = await CreateEventAsync();
+            var firstSpeaker = TestResourceFactory.Create(
+                "First Speaker",
+                "First speaker profile.",
+                ResourceType.Speaker,
+                100m,
+                null,
+                "IT",
+                4,
+                DateTime.UtcNow);
+            var secondSpeaker = TestResourceFactory.Create(
+                "Second Speaker",
+                "Second speaker profile.",
+                ResourceType.Speaker,
+                100m,
+                null,
+                "IT",
+                4,
+                DateTime.UtcNow);
+            DbContext.Resources.AddRange(firstSpeaker, secondSpeaker);
+            var booking = EventResourceBooking.Create(eventItem.Id, DateTime.UtcNow);
+            DbContext.EventResourceBookings.Add(booking);
+            await DbContext.SaveChangesAsync();
+
+            await using var firstContext = CreateDbContext();
+            await using var secondContext = CreateDbContext();
+            var firstCopy = await firstContext.EventResourceBookings
+                .Include(item => item.Items)
+                .SingleAsync(item => item.Id == booking.Id);
+            var secondCopy = await secondContext.EventResourceBookings
+                .Include(item => item.Items)
+                .SingleAsync(item => item.Id == booking.Id);
+
+            firstCopy.AddResource(firstSpeaker.Id, ResourceType.Speaker, DateTime.UtcNow);
+            secondCopy.AddResource(secondSpeaker.Id, ResourceType.Speaker, DateTime.UtcNow);
+            await firstContext.SaveChangesAsync();
+
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
+                () => secondContext.SaveChangesAsync());
+        }
+
+        [Fact]
         public void Model_HasExpectedUniqueBookingIndexes()
         {
             var bookingType = DbContext.Model.FindEntityType(typeof(EventResourceBooking));

@@ -34,5 +34,27 @@ namespace EventOrganizer.Application.Common.Authorization
 
             throw new ForbiddenException("The current user is not allowed to manage this event.");
         }
+
+        public void EnsureCanViewBooking(Event eventItem)
+        {
+            EnsureCanManage(eventItem);
+        }
+
+        public void EnsureCanMutateBooking(Event eventItem)
+        {
+            if (!_currentUserService.IsAuthenticated || _currentUserService.UserId is null)
+            {
+                throw new UnauthorizedException("An authenticated user is required to manage event bookings.");
+            }
+
+            if (_currentUserService.IsInRole(ApplicationRoles.Organizer) &&
+                eventItem.OrganizerUserId == _currentUserService.UserId.Value)
+            {
+                return;
+            }
+
+            throw new ForbiddenException(
+                "Only the organizer who owns the event can change its booking.");
+        }
     }
 }

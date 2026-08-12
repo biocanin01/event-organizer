@@ -36,8 +36,9 @@ namespace EventOrganizer.Application.Commands.ArchiveResource
             var hasActiveBookings = await _dbContext.EventResourceBookings
                 .AnyAsync(
                     booking =>
-                        (booking.Status == EventResourceBookingStatus.Submitted
-                            || booking.Status == EventResourceBookingStatus.Approved)
+                        (booking.Status == EventResourceBookingStatus.Approved
+                            || (booking.Status == EventResourceBookingStatus.Submitted
+                                && booking.HoldExpiresAtUtc > now))
                         && booking.Items.Any(item => item.ResourceId == request.ResourceId),
                     cancellationToken);
 

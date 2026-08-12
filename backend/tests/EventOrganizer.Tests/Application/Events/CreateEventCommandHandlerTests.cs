@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Commands.CreateEvent;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,8 +40,15 @@ namespace EventOrganizer.Tests.Application.Events
             Assert.Equal(command.Budget, eventItem.Budget);
             Assert.Equal(command.Area, eventItem.Area);
             Assert.Equal(command.RequiredSpeakerCount, eventItem.RequiredSpeakerCount);
+            Assert.False(eventItem.RequiresEquipment);
             Assert.Equal(organizerUserId, eventItem.OrganizerUserId);
             Assert.Equal(EventStatus.Draft, eventItem.Status);
+
+            var booking = await DbContext.EventResourceBookings
+                .SingleAsync(booking => booking.EventId == eventId);
+
+            Assert.Equal(EventResourceBookingStatus.Draft, booking.Status);
+            Assert.Equal(1, booking.Version);
         }
 
         [Fact]

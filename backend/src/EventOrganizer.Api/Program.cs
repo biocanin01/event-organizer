@@ -2,6 +2,7 @@ using EventOrganizer.Api.Authorization;
 using EventOrganizer.Api.Middleware;
 using EventOrganizer.Application;
 using EventOrganizer.Application.Common.Constants;
+using EventOrganizer.Application.Common.Options;
 using EventOrganizer.Infrastructure;
 using EventOrganizer.Infrastructure.Identity;
 using Microsoft.OpenApi;
@@ -43,6 +44,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddApplication();
+builder.Services.Configure<BookingOptions>(
+    builder.Configuration.GetSection(BookingOptions.SectionName));
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAuthorization(options =>
 {

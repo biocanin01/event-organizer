@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Behaviors;
+using EventOrganizer.Application.Common.Options;
 using EventOrganizer.Application.Recommendations.Candidates;
 using EventOrganizer.Application.Recommendations.Optimization;
 using FluentValidation;
@@ -12,6 +13,9 @@ namespace EventOrganizer.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+            services.AddOptions<BookingOptions>()
+                .Validate(options => options.HoldDurationHours > 0);
+
             services.AddMediatR(configuration =>
                 configuration.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
 

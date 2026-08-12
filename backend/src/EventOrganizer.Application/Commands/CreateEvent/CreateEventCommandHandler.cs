@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using MediatR;
 
@@ -35,9 +36,13 @@ namespace EventOrganizer.Application.Commands.CreateEvent
                 request.Area,
                 request.RequiredSpeakerCount,
                 _currentUserService.UserId.Value,
-                DateTime.UtcNow);
+                DateTime.UtcNow,
+                request.RequiresEquipment);
+
+            var booking = EventResourceBooking.Create(eventItem.Id, DateTime.UtcNow);
 
             _dbContext.Events.Add(eventItem);
+            _dbContext.EventResourceBookings.Add(booking);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return eventItem.Id;

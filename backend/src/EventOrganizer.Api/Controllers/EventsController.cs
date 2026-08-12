@@ -1,8 +1,14 @@
 using EventOrganizer.Api.Authorization;
+using EventOrganizer.Api.Contracts.Bookings;
 using EventOrganizer.Api.Contracts.Events;
 using EventOrganizer.Application.Commands.CancelEvent;
 using EventOrganizer.Application.Commands.CreateEvent;
 using EventOrganizer.Application.Commands.PublishEvent;
+using EventOrganizer.Application.Commands.ReviseEventBooking;
+using EventOrganizer.Application.Commands.SubmitEventBooking;
+using EventOrganizer.Application.Commands.UpdateEventBookingDraft;
+using EventOrganizer.Application.Commands.WithdrawEventBooking;
+using EventOrganizer.Application.Queries.GetEventBooking;
 using EventOrganizer.Application.Queries.GetEventRecommendation;
 using EventOrganizer.Application.Queries.GetPublishedEventById;
 using EventOrganizer.Application.Queries.ListPublishedEvents;
@@ -68,13 +74,116 @@ namespace EventOrganizer.Api.Controllers
                 request.Capacity,
                 request.Budget,
                 request.Area,
-                request.RequiredSpeakerCount);
+                request.RequiredSpeakerCount,
+                request.RequiresEquipment);
 
             var eventId = await _sender.Send(command, cancellationToken);
 
             return StatusCode(
                 StatusCodes.Status201Created,
                 new CreateEventResponse(eventId));
+        }
+
+        [HttpGet("{id:guid}/booking")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventResourceBookingResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<EventResourceBookingResponse>> GetBooking(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            var booking = await _sender.Send(
+                new GetEventBookingQuery(id),
+                cancellationToken);
+
+            return Ok(booking);
+        }
+
+        [HttpPut("{id:guid}/booking/draft")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventResourceBookingResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<EventResourceBookingResponse>> UpdateBookingDraft(
+            Guid id,
+            UpdateEventBookingDraftRequest request,
+            CancellationToken cancellationToken)
+        {
+            var booking = await _sender.Send(
+                new UpdateEventBookingDraftCommand(
+                    id,
+                    request.Version,
+                    request.VenueId,
+                    request.SpeakerIds,
+                    request.EquipmentPackageId),
+                cancellationToken);
+
+            return Ok(booking);
+        }
+
+        [HttpPatch("{id:guid}/booking/submit")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventResourceBookingResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<EventResourceBookingResponse>> SubmitBooking(
+            Guid id,
+            EventBookingVersionRequest request,
+            CancellationToken cancellationToken)
+        {
+            var booking = await _sender.Send(
+                new SubmitEventBookingCommand(id, request.Version),
+                cancellationToken);
+
+            return Ok(booking);
+        }
+
+        [HttpPatch("{id:guid}/booking/withdraw")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventResourceBookingResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<EventResourceBookingResponse>> WithdrawBooking(
+            Guid id,
+            EventBookingVersionRequest request,
+            CancellationToken cancellationToken)
+        {
+            var booking = await _sender.Send(
+                new WithdrawEventBookingCommand(id, request.Version),
+                cancellationToken);
+
+            return Ok(booking);
+        }
+
+        [HttpPatch("{id:guid}/booking/revise")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventResourceBookingResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<EventResourceBookingResponse>> ReviseBooking(
+            Guid id,
+            EventBookingVersionRequest request,
+            CancellationToken cancellationToken)
+        {
+            var booking = await _sender.Send(
+                new ReviseEventBookingCommand(id, request.Version),
+                cancellationToken);
+
+            return Ok(booking);
         }
 
         [HttpGet("{id:guid}/recommendation")]

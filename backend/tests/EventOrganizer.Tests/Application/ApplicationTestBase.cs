@@ -17,15 +17,20 @@ namespace EventOrganizer.Tests.Application
             _connection = new SqliteConnection("DataSource=:memory:");
             _connection.Open();
 
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseSqlite(_connection)
-                .Options;
-
-            DbContext = new AppDbContext(options);
+            DbContext = CreateDbContext();
             DbContext.Database.EnsureCreated();
         }
 
         protected AppDbContext DbContext { get; }
+
+        protected AppDbContext CreateDbContext()
+        {
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite(_connection)
+                .Options;
+
+            return new AppDbContext(options);
+        }
 
         protected async Task<Guid> CreateOrganizerUserAsync(string? email = null)
         {
@@ -49,7 +54,13 @@ namespace EventOrganizer.Tests.Application
         protected async Task<Event> CreateEventAsync(
             Guid? organizerUserId = null,
             string title = "Software Architecture Seminar",
-            DateTime? startsAtUtc = null)
+            DateTime? startsAtUtc = null,
+            DateTime? endsAtUtc = null,
+            int capacity = 80,
+            decimal budget = 1000m,
+            string area = "IT",
+            int requiredSpeakerCount = 1,
+            bool requiresEquipment = false)
         {
             var resolvedOrganizerUserId = organizerUserId ?? await CreateOrganizerUserAsync();
             var resolvedStartsAtUtc = startsAtUtc ?? new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
@@ -59,13 +70,14 @@ namespace EventOrganizer.Tests.Application
                 title,
                 "Seminar about modern web architecture.",
                 resolvedStartsAtUtc,
-                resolvedStartsAtUtc.AddHours(4),
-                80,
-                1000m,
-                "IT",
-                1,
+                endsAtUtc ?? resolvedStartsAtUtc.AddHours(4),
+                capacity,
+                budget,
+                area,
+                requiredSpeakerCount,
                 resolvedOrganizerUserId,
-                new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
+                new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc),
+                requiresEquipment);
 
             DbContext.Events.Add(eventItem);
             await DbContext.SaveChangesAsync();
@@ -94,10 +106,16 @@ namespace EventOrganizer.Tests.Application
 
         protected async Task<EventResourceBooking> SetBookingStatusAsync(
             Guid bookingId,
-            EventResourceBookingStatus status)
+            EventResourceBookingStatus status,
+            DateTime? holdExpiresAtUtc = null)
         {
+            var resolvedHoldExpiresAtUtc = holdExpiresAtUtc
+                ?? (status == EventResourceBookingStatus.Submitted
+                    ? DateTime.UtcNow.AddHours(1)
+                    : null);
+
             await DbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE EventResourceBookings SET Status = {status.ToString()} WHERE Id = {bookingId}");
+                $"UPDATE EventResourceBookings SET Status = {status.ToString()}, HoldExpiresAtUtc = {resolvedHoldExpiresAtUtc} WHERE Id = {bookingId}");
 
             DbContext.ChangeTracker.Clear();
 

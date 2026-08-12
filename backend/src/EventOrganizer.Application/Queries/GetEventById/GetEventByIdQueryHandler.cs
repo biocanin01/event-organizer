@@ -30,6 +30,7 @@ namespace EventOrganizer.Application.Queries.GetEventById
                     eventItem.Budget,
                     eventItem.Area,
                     eventItem.RequiredSpeakerCount,
+                    eventItem.RequiresEquipment,
                     eventItem.OrganizerUserId,
                     eventItem.Status.ToString(),
                     eventItem.CreatedAtUtc,

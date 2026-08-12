@@ -10,6 +10,7 @@
         decimal Budget,
         string Area,
         int RequiredSpeakerCount,
+        bool RequiresEquipment,
         Guid OrganizerUserId,
         string Status,
         DateTime CreatedAtUtc,

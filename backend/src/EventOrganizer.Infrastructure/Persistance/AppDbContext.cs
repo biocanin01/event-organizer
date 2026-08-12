@@ -8,6 +8,9 @@ using EventOrganizer.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
+using System.Data;
 
 namespace EventOrganizer.Infrastructure.Persistance
 {
@@ -26,6 +29,31 @@ namespace EventOrganizer.Infrastructure.Persistance
         public DbSet<OrganizerRoleRequest> OrganizerRoleRequests => Set<OrganizerRoleRequest>();
 
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+        public Task<IDbContextTransaction> BeginTransactionAsync(
+            IsolationLevel isolationLevel,
+            CancellationToken cancellationToken = default)
+        {
+            return Database.BeginTransactionAsync(isolationLevel, cancellationToken);
+        }
+
+        public async Task CommitTransactionAsync(
+            IDbContextTransaction transaction,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (PostgresException exception) when (
+                exception.SqlState is PostgresErrorCodes.SerializationFailure
+                    or PostgresErrorCodes.DeadlockDetected)
+            {
+                throw new DbUpdateConcurrencyException(
+                    "The transaction could not be committed because of a concurrent database change.",
+                    exception);
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

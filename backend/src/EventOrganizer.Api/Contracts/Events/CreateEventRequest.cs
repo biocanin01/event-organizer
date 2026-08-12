@@ -8,5 +8,6 @@
         int Capacity,
         decimal Budget,
         string Area,
-        int RequiredSpeakerCount);
+        int RequiredSpeakerCount,
+        bool RequiresEquipment = false);
 }

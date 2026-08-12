@@ -1,0 +1,14 @@
+namespace EventOrganizer.Application.Responses
+{
+    public sealed record EventResourceBookingResponse(
+        Guid Id,
+        Guid EventId,
+        string Status,
+        int Version,
+        DateTime? SubmittedAtUtc,
+        DateTime? HoldExpiresAtUtc,
+        decimal TotalCost,
+        EventBookingResourceResponse? Venue,
+        IReadOnlyList<EventBookingResourceResponse> Speakers,
+        EventBookingResourceResponse? EquipmentPackage);
+}

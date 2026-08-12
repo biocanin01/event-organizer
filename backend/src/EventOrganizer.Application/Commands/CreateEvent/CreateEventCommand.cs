@@ -10,5 +10,6 @@ namespace EventOrganizer.Application.Commands.CreateEvent
         int Capacity,
         decimal Budget,
         string Area,
-        int RequiredSpeakerCount) : IRequest<Guid>;
+        int RequiredSpeakerCount,
+        bool RequiresEquipment = false) : IRequest<Guid>;
 }

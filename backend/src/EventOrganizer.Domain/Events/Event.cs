@@ -14,6 +14,7 @@ namespace EventOrganizer.Domain.Events
             decimal budget,
             string area,
             int requiredSpeakerCount,
+            bool requiresEquipment,
             Guid organizerUserId,
             DateTime createdAtUtc)
         {
@@ -26,6 +27,7 @@ namespace EventOrganizer.Domain.Events
             Budget = budget;
             Area = area;
             RequiredSpeakerCount = requiredSpeakerCount;
+            RequiresEquipment = requiresEquipment;
             OrganizerUserId = organizerUserId;
             Status = EventStatus.Draft;
             CreatedAtUtc = createdAtUtc;
@@ -49,6 +51,8 @@ namespace EventOrganizer.Domain.Events
 
         public int RequiredSpeakerCount { get; private set; }
 
+        public bool RequiresEquipment { get; private set; }
+
         public Guid OrganizerUserId { get; private set; }
 
         public EventStatus Status { get; private set; }
@@ -67,7 +71,8 @@ namespace EventOrganizer.Domain.Events
             string area,
             int requiredSpeakerCount,
             Guid organizerUserId,
-            DateTime createdAtUtc)
+            DateTime createdAtUtc,
+            bool requiresEquipment = false)
         {
             ValidateTitle(title);
             ValidateSchedule(startsAtUtc, endsAtUtc);
@@ -91,6 +96,7 @@ namespace EventOrganizer.Domain.Events
                 budget,
                 area.Trim(),
                 requiredSpeakerCount,
+                requiresEquipment,
                 organizerUserId,
                 createdAtUtc);
         }
@@ -104,6 +110,7 @@ namespace EventOrganizer.Domain.Events
             decimal budget,
             string area,
             int requiredSpeakerCount,
+            bool requiresEquipment,
             DateTime updatedAtUtc)
         {
             EnsureEditable();
@@ -122,6 +129,7 @@ namespace EventOrganizer.Domain.Events
             Budget = budget;
             Area = area.Trim();
             RequiredSpeakerCount = requiredSpeakerCount;
+            RequiresEquipment = requiresEquipment;
             UpdatedAtUtc = updatedAtUtc;
         }
 

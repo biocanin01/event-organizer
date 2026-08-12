@@ -13,6 +13,9 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
         {
             builder.ToTable("EventResourceBookings");
 
+            builder.Property(booking => booking.Id)
+                .ValueGeneratedNever();
+
             builder.Property(booking => booking.EventId)
                 .IsRequired();
 
@@ -27,6 +30,10 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
 
             builder.Property(booking => booking.CreatedAtUtc)
                 .IsRequired();
+
+            builder.Property(booking => booking.SubmittedAtUtc);
+
+            builder.Property(booking => booking.HoldExpiresAtUtc);
 
             builder.HasOne<Event>()
                 .WithOne()
@@ -54,6 +61,9 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
         public void Configure(EntityTypeBuilder<EventResourceBookingItem> builder)
         {
             builder.ToTable("EventResourceBookingItems");
+
+            builder.Property(item => item.Id)
+                .ValueGeneratedNever();
 
             builder.Property(item => item.BookingId)
                 .IsRequired();

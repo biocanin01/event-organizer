@@ -32,6 +32,10 @@ namespace EventOrganizer.Domain.Bookings
 
         public DateTime? UpdatedAtUtc { get; private set; }
 
+        public DateTime? SubmittedAtUtc { get; private set; }
+
+        public DateTime? HoldExpiresAtUtc { get; private set; }
+
         public IReadOnlyCollection<EventResourceBookingItem> Items => _items.AsReadOnly();
 
         public static EventResourceBooking Create(
@@ -119,6 +123,113 @@ namespace EventOrganizer.Domain.Bookings
             }
 
             Status = EventResourceBookingStatus.Cancelled;
+            SubmittedAtUtc = null;
+            HoldExpiresAtUtc = null;
+            Touch(updatedAtUtc);
+        }
+
+        public void ReplaceResources(
+            Guid? venueId,
+            IReadOnlyCollection<Guid> speakerIds,
+            Guid? equipmentPackageId,
+            DateTime updatedAtUtc)
+        {
+            EnsureDraft();
+            ArgumentNullException.ThrowIfNull(speakerIds);
+
+            var newItems = new List<EventResourceBookingItem>();
+
+            if (venueId.HasValue)
+            {
+                ValidateResourceId(venueId.Value);
+                newItems.Add(EventResourceBookingItem.Create(Id, venueId.Value, ResourceType.Venue));
+            }
+
+            foreach (var speakerId in speakerIds)
+            {
+                ValidateResourceId(speakerId);
+                if (newItems.Any(item => item.ResourceId == speakerId))
+                {
+                    throw new InvalidOperationException("Resource is already part of this booking.");
+                }
+
+                newItems.Add(EventResourceBookingItem.Create(Id, speakerId, ResourceType.Speaker));
+            }
+
+            if (equipmentPackageId.HasValue)
+            {
+                ValidateResourceId(equipmentPackageId.Value);
+                if (newItems.Any(item => item.ResourceId == equipmentPackageId.Value))
+                {
+                    throw new InvalidOperationException("Resource is already part of this booking.");
+                }
+
+                newItems.Add(EventResourceBookingItem.Create(
+                    Id,
+                    equipmentPackageId.Value,
+                    ResourceType.EquipmentPackage));
+            }
+
+            if (_items.Count == newItems.Count
+                && _items
+                    .OrderBy(item => item.ResourceId)
+                    .Select(item => (item.ResourceId, item.ResourceType))
+                    .SequenceEqual(newItems
+                        .OrderBy(item => item.ResourceId)
+                        .Select(item => (item.ResourceId, item.ResourceType))))
+            {
+                return;
+            }
+
+            _items.Clear();
+            _items.AddRange(newItems);
+            Touch(updatedAtUtc);
+        }
+
+        public void Submit(
+            DateTime submittedAtUtc,
+            DateTime holdExpiresAtUtc)
+        {
+            EnsureDraft();
+
+            if (holdExpiresAtUtc <= submittedAtUtc)
+            {
+                throw new ArgumentException(
+                    "Hold expiration must be after submission time.",
+                    nameof(holdExpiresAtUtc));
+            }
+
+            Status = EventResourceBookingStatus.Submitted;
+            SubmittedAtUtc = submittedAtUtc;
+            HoldExpiresAtUtc = holdExpiresAtUtc;
+            Touch(submittedAtUtc);
+        }
+
+        public void Withdraw(DateTime updatedAtUtc)
+        {
+            if (Status != EventResourceBookingStatus.Submitted)
+            {
+                throw new InvalidOperationException("Only submitted bookings can be withdrawn.");
+            }
+
+            Status = EventResourceBookingStatus.Draft;
+            SubmittedAtUtc = null;
+            HoldExpiresAtUtc = null;
+            Touch(updatedAtUtc);
+        }
+
+        public void Revise(DateTime updatedAtUtc)
+        {
+            if (Status is not (EventResourceBookingStatus.Rejected
+                or EventResourceBookingStatus.Expired))
+            {
+                throw new InvalidOperationException(
+                    "Only rejected or expired bookings can be revised.");
+            }
+
+            Status = EventResourceBookingStatus.Draft;
+            SubmittedAtUtc = null;
+            HoldExpiresAtUtc = null;
             Touch(updatedAtUtc);
         }
 
@@ -134,6 +245,14 @@ namespace EventOrganizer.Domain.Bookings
         {
             UpdatedAtUtc = updatedAtUtc;
             Version++;
+        }
+
+        private static void ValidateResourceId(Guid resourceId)
+        {
+            if (resourceId == Guid.Empty)
+            {
+                throw new ArgumentException("Resource id is required.", nameof(resourceId));
+            }
         }
     }
 }

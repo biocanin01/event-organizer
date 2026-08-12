@@ -43,6 +43,10 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
                 .HasDefaultValue(1)
                 .IsRequired();
 
+            builder.Property(e => e.RequiresEquipment)
+                .HasDefaultValue(false)
+                .IsRequired();
+
             builder.Property(e => e.OrganizerUserId)
                 .IsRequired();
 

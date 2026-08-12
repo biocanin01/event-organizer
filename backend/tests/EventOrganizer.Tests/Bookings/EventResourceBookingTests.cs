@@ -131,6 +131,35 @@ namespace EventOrganizer.Tests.Bookings
                 DateTime.UtcNow));
         }
 
+        [Fact]
+        public void Submit_WhenBookingIsDraft_SubmitsWithHold()
+        {
+            var booking = CreateBooking();
+            var submittedAtUtc = DateTime.UtcNow;
+            var holdExpiresAtUtc = submittedAtUtc.AddHours(48);
+
+            booking.Submit(submittedAtUtc, holdExpiresAtUtc);
+
+            Assert.Equal(EventResourceBookingStatus.Submitted, booking.Status);
+            Assert.Equal(submittedAtUtc, booking.SubmittedAtUtc);
+            Assert.Equal(holdExpiresAtUtc, booking.HoldExpiresAtUtc);
+            Assert.Equal(2, booking.Version);
+        }
+
+        [Fact]
+        public void Withdraw_WhenBookingIsSubmitted_ReturnsToDraftAndClearsHold()
+        {
+            var booking = CreateBooking();
+            booking.Submit(DateTime.UtcNow, DateTime.UtcNow.AddHours(48));
+
+            booking.Withdraw(DateTime.UtcNow);
+
+            Assert.Equal(EventResourceBookingStatus.Draft, booking.Status);
+            Assert.Null(booking.SubmittedAtUtc);
+            Assert.Null(booking.HoldExpiresAtUtc);
+            Assert.Equal(3, booking.Version);
+        }
+
         private static EventResourceBooking CreateBooking()
         {
             return EventResourceBooking.Create(Guid.NewGuid(), DateTime.UtcNow);
