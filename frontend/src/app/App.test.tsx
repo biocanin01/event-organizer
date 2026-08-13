@@ -145,9 +145,9 @@ describe('App', () => {
     await screen.findByRole('heading', { name: 'Organizer rola' })
     await userEvent.type(
       screen.getByLabelText('Motivacija'),
-      'Zelim da organizujem edukativne dogadjaje za IT zajednicu.',
+      'Želim da organizujem edukativne događaje za IT zajednicu.',
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Posalji zahtev' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Pošalji zahtev' }))
 
     await vi.waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -268,7 +268,7 @@ describe('App', () => {
             {
               id: 'request-id',
               userId: 'participant-id',
-              motivation: 'Zelim da organizujem edukativne dogadjaje.',
+              motivation: 'Želim da organizujem edukativne događaje.',
               status: 'Pending',
               reviewedByAdminUserId: null,
               decisionReason: null,
@@ -381,7 +381,7 @@ describe('App', () => {
 
     expect(await screen.findByText('Participant User')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Detalji' }))
-    expect(await screen.findByText('Broj kreiranih dogadjaja: 2')).toBeInTheDocument()
+    expect(await screen.findByText('Broj kreiranih događaja: 2')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Suspenduj' }))
 
     await vi.waitFor(() =>
@@ -390,5 +390,223 @@ describe('App', () => {
         expect.objectContaining({ method: 'PATCH' }),
       ),
     )
+  })
+
+  it('loads public published events for a participant', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      if (path === '/events') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'published-event-id',
+              title: 'Published Seminar',
+              description: 'Published event.',
+              startsAtUtc: '2026-09-01T09:00:00Z',
+              endsAtUtc: '2026-09-01T13:00:00Z',
+              capacity: 80,
+              budget: 1000,
+              area: 'IT',
+              requiredSpeakerCount: 1,
+              requiresEquipment: false,
+              organizerUserId: 'organizer-id',
+              status: 'Published',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events')
+
+    renderApplication()
+
+    expect(await screen.findByText('Published Seminar')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Novi događaj' })).not.toBeInTheDocument()
+  })
+
+  it('loads manageable events for an organizer and shows draft actions', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'draft-event-id',
+              title: 'Draft Workshop',
+              description: 'Draft event.',
+              startsAtUtc: '2026-09-01T09:00:00Z',
+              endsAtUtc: '2026-09-01T13:00:00Z',
+              capacity: 80,
+              budget: 1000,
+              area: 'IT',
+              requiredSpeakerCount: 1,
+              requiresEquipment: true,
+              organizerUserId: 'participant-id',
+              status: 'Draft',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+            {
+              id: 'published-event-id',
+              title: 'Published Workshop',
+              description: 'Published event.',
+              startsAtUtc: '2026-09-02T09:00:00Z',
+              endsAtUtc: '2026-09-02T13:00:00Z',
+              capacity: 80,
+              budget: 1000,
+              area: 'IT',
+              requiredSpeakerCount: 1,
+              requiresEquipment: false,
+              organizerUserId: 'participant-id',
+              status: 'Published',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events')
+
+    renderApplication()
+
+    expect(await screen.findByText('Draft Workshop')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Novi događaj' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Izmeni' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Objavi' })).toBeInTheDocument()
+  })
+
+  it('creates an event with the expected payload', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
+      if (path === '/events' && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse({ eventId: 'new-event-id' }, 201))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events')
+
+    renderApplication()
+
+    await screen.findByRole('button', { name: 'Novi događaj' })
+    await userEvent.click(screen.getByRole('button', { name: 'Novi događaj' }))
+    await userEvent.type(screen.getByLabelText('Naziv'), 'Architecture Day')
+    await userEvent.type(screen.getByLabelText('Opis'), 'Technical event.')
+    await userEvent.type(screen.getByLabelText('Početak'), '2026-09-01T09:00')
+    await userEvent.type(screen.getByLabelText('Kraj'), '2026-09-01T13:00')
+    await userEvent.clear(screen.getByLabelText('Kapacitet'))
+    await userEvent.type(screen.getByLabelText('Kapacitet'), '120')
+    await userEvent.clear(screen.getByLabelText('Budžet'))
+    await userEvent.type(screen.getByLabelText('Budžet'), '1500')
+    await userEvent.type(screen.getByLabelText('Oblast'), 'IT')
+    await userEvent.clear(screen.getByLabelText('Broj predavača'))
+    await userEvent.type(screen.getByLabelText('Broj predavača'), '2')
+    await userEvent.click(screen.getByLabelText('Potrebna oprema'))
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/events`,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"requiresEquipment":true'),
+        }),
+      ),
+    )
+  })
+
+  it('shows backend conflict errors when publishing is blocked', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'draft-event-id',
+              title: 'Draft Workshop',
+              description: 'Draft event.',
+              startsAtUtc: '2026-09-01T09:00:00Z',
+              endsAtUtc: '2026-09-01T13:00:00Z',
+              capacity: 80,
+              budget: 1000,
+              area: 'IT',
+              requiredSpeakerCount: 1,
+              requiresEquipment: false,
+              organizerUserId: 'participant-id',
+              status: 'Draft',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/events/draft-event-id/publish' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(
+            {
+              status: 409,
+              title: 'Event booking must be approved before publishing.',
+              errors: [],
+            },
+            409,
+          ),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events')
+
+    renderApplication()
+
+    await screen.findByText('Draft Workshop')
+    await userEvent.click(screen.getByRole('button', { name: 'Objavi' }))
+
+    expect(
+      await screen.findByText('Event booking must be approved before publishing.'),
+    ).toBeInTheDocument()
   })
 })

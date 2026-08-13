@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { PublicOnlyRoute } from '../../features/auth/PublicOnlyRoute'
 import { RequireAuth } from '../../features/auth/RequireAuth'
 import { applicationRoles } from '../../features/auth/types'
+import { EventsPage } from '../../features/events/EventsPage'
 import { AdminOrganizerRequestsPage } from '../../features/organizerRequests/AdminOrganizerRequestsPage'
 import { AdminUsersPage } from '../../features/users/AdminUsersPage'
 import { DashboardPage } from '../../pages/DashboardPage'
@@ -25,19 +26,14 @@ export function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route
             path="events"
-            element={
-              <PlaceholderSectionPage
-                title="Dogadjaji"
-                description="Pregled dogadjaja i buduce akcije za prijavu, kreiranje i uredjivanje."
-              />
-            }
+            element={<EventsPage />}
           />
           <Route
             path="registrations"
             element={
               <PlaceholderSectionPage
                 title="Prijave i rezervacije"
-                description="Pregled prijava ucesnika i rezervacija povezanih sa dogadjajima."
+                description="Pregled prijava učesnika i rezervacija povezanih sa događajima."
               />
             }
           />
@@ -64,8 +60,8 @@ export function AppRoutes() {
             path="reports"
             element={
               <PlaceholderSectionPage
-                title="Izvestaji"
-                description="Pregled recenzija i osnovnih pokazatelja organizovanih dogadjaja."
+                title="Izveštaji"
+                description="Pregled recenzija i osnovnih pokazatelja organizovanih događaja."
               />
             }
           />

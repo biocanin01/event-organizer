@@ -3,9 +3,13 @@ import { Chip, type ChipProps } from '@mui/material'
 const statusColors: Record<string, ChipProps['color']> = {
   Active: 'success',
   Approved: 'success',
+  Completed: 'success',
+  Draft: 'default',
+  Published: 'success',
   Pending: 'warning',
   PendingVerification: 'warning',
   Rejected: 'error',
+  Cancelled: 'error',
   Suspended: 'error',
   Withdrawn: 'default',
   Deleted: 'default',
@@ -14,11 +18,15 @@ const statusColors: Record<string, ChipProps['color']> = {
 const statusLabels: Record<string, string> = {
   Active: 'Aktivan',
   Approved: 'Odobren',
-  Pending: 'Na cekanju',
-  PendingVerification: 'Ceka verifikaciju',
+  Cancelled: 'Otkazan',
+  Completed: 'Završen',
+  Draft: 'Draft',
+  Published: 'Objavljen',
+  Pending: 'Na čekanju',
+  PendingVerification: 'Čeka verifikaciju',
   Rejected: 'Odbijen',
   Suspended: 'Suspendovan',
-  Withdrawn: 'Povucen',
+  Withdrawn: 'Povučen',
   Deleted: 'Obrisan',
 }
 
