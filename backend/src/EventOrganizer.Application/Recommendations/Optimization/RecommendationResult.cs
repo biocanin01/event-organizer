@@ -6,7 +6,7 @@ namespace EventOrganizer.Application.Recommendations.Optimization
         bool IsSuccessful,
         ResourceCandidate? Venue,
         IReadOnlyList<ResourceCandidate> Speakers,
-        IReadOnlyList<ResourceCandidate> Equipment,
+        ResourceCandidate? EquipmentPackage,
         decimal TotalCost,
         int TotalQualityScore,
         IReadOnlyList<string> FailureReasons)
@@ -14,7 +14,7 @@ namespace EventOrganizer.Application.Recommendations.Optimization
         public static RecommendationResult Success(
             ResourceCandidate venue,
             IReadOnlyList<ResourceCandidate> speakers,
-            IReadOnlyList<ResourceCandidate> equipment,
+            ResourceCandidate? equipmentPackage,
             decimal totalCost,
             int totalQualityScore)
         {
@@ -22,7 +22,7 @@ namespace EventOrganizer.Application.Recommendations.Optimization
                 true,
                 venue,
                 speakers,
-                equipment,
+                equipmentPackage,
                 totalCost,
                 totalQualityScore,
                 Array.Empty<string>());
@@ -34,7 +34,7 @@ namespace EventOrganizer.Application.Recommendations.Optimization
                 false,
                 null,
                 Array.Empty<ResourceCandidate>(),
-                Array.Empty<ResourceCandidate>(),
+                null,
                 0m,
                 0,
                 failureReasons);

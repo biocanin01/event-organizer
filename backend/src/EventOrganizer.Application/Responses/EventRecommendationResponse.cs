@@ -4,7 +4,7 @@ namespace EventOrganizer.Application.Responses
         bool IsSuccessful,
         RecommendedResourceResponse? Venue,
         IReadOnlyList<RecommendedResourceResponse> Speakers,
-        IReadOnlyList<RecommendedResourceResponse> Equipment,
+        RecommendedResourceResponse? EquipmentPackage,
         decimal TotalCost,
         int TotalQualityScore,
         IReadOnlyList<string> FailureReasons);

@@ -12,7 +12,10 @@ namespace EventOrganizer.Tests.Application.Recommendations
         [Fact]
         public void Optimize_WithFeasibleCandidates_ReturnsHighestQualityCombinationWithinBudget()
         {
-            var eventItem = CreateEvent(budget: 800m, requiredSpeakerCount: 2);
+            var eventItem = CreateEvent(
+                budget: 800m,
+                requiredSpeakerCount: 2,
+                requiresEquipment: true);
             var venue = CreateCandidate("Better Hall", ResourceType.Venue, 350m, qualityScore: 5);
             var firstSpeaker = CreateCandidate("Senior Speaker", ResourceType.Speaker, 200m, qualityScore: 5);
             var secondSpeaker = CreateCandidate("Domain Speaker", ResourceType.Speaker, 150m, qualityScore: 4);
@@ -30,7 +33,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             Assert.True(result.IsSuccessful);
             Assert.Equal(venue.Id, result.Venue?.Id);
             Assert.Equal(new[] { secondSpeaker.Id, firstSpeaker.Id }, result.Speakers.Select(speaker => speaker.Id));
-            Assert.Equal(new[] { affordableEquipment.Id }, result.Equipment.Select(equipment => equipment.Id));
+            Assert.Equal(affordableEquipment.Id, result.EquipmentPackage?.Id);
             Assert.Equal(800m, result.TotalCost);
             Assert.Equal(17, result.TotalQualityScore);
         }
@@ -54,6 +57,44 @@ namespace EventOrganizer.Tests.Application.Recommendations
             Assert.Equal(cheaperVenue.Id, result.Venue?.Id);
             Assert.Equal(400m, result.TotalCost);
             Assert.Equal(9, result.TotalQualityScore);
+            Assert.Null(result.EquipmentPackage);
+        }
+
+        [Fact]
+        public void Optimize_WhenEquipmentIsNotRequired_DoesNotSelectEquipmentPackage()
+        {
+            var eventItem = CreateEvent(budget: 1000m);
+            var venue = CreateCandidate("Main Hall", ResourceType.Venue, 300m, qualityScore: 4);
+            var speaker = CreateCandidate("Architecture Speaker", ResourceType.Speaker, 100m, qualityScore: 4);
+            var equipment = CreateCandidate("Excellent Equipment", ResourceType.EquipmentPackage, 100m, qualityScore: 5);
+
+            var result = _optimizer.Optimize(
+                eventItem,
+                new ResourceCandidateSet(
+                    new[] { venue },
+                    new[] { speaker },
+                    new[] { equipment }));
+
+            Assert.True(result.IsSuccessful);
+            Assert.Null(result.EquipmentPackage);
+            Assert.Equal(400m, result.TotalCost);
+            Assert.Equal(8, result.TotalQualityScore);
+        }
+
+        [Fact]
+        public void Optimize_WhenEquipmentIsRequiredWithoutCandidates_ReturnsFailure()
+        {
+            var eventItem = CreateEvent(requiresEquipment: true);
+
+            var result = _optimizer.Optimize(
+                eventItem,
+                new ResourceCandidateSet(
+                    new[] { CreateCandidate("Main Hall", ResourceType.Venue) },
+                    new[] { CreateCandidate("Architecture Speaker", ResourceType.Speaker) },
+                    Array.Empty<ResourceCandidate>()));
+
+            Assert.False(result.IsSuccessful);
+            Assert.Contains("No eligible equipment package candidates.", result.FailureReasons);
         }
 
         [Fact]
@@ -106,7 +147,8 @@ namespace EventOrganizer.Tests.Application.Recommendations
 
         private static Event CreateEvent(
             decimal budget = 1000m,
-            int requiredSpeakerCount = 1)
+            int requiredSpeakerCount = 1,
+            bool requiresEquipment = false)
         {
             var startsAtUtc = new DateTime(2026, 9, 1, 9, 0, 0, DateTimeKind.Utc);
 
@@ -120,7 +162,8 @@ namespace EventOrganizer.Tests.Application.Recommendations
                 "IT",
                 requiredSpeakerCount,
                 Guid.NewGuid(),
-                new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc));
+                new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc),
+                requiresEquipment);
         }
 
         private static ResourceCandidate CreateCandidate(

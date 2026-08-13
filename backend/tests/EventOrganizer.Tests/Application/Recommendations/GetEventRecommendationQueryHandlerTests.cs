@@ -18,7 +18,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync(organizerUserId);
             var venue = await CreateResourceAsync("Main Hall", ResourceType.Venue, 350m, 120, "IT", 5);
             var speaker = await CreateResourceAsync("Architecture Speaker", ResourceType.Speaker, 200m, null, "it", 5);
-            var equipment = await CreateResourceAsync("Projector", ResourceType.EquipmentPackage, 100m, null, null, 3);
+            await CreateResourceAsync("Projector", ResourceType.EquipmentPackage, 100m, 120, "IT", 3);
             var handler = CreateHandler(organizerUserId, ApplicationRoles.Organizer);
 
             var result = await handler.Handle(
@@ -28,10 +28,38 @@ namespace EventOrganizer.Tests.Application.Recommendations
             Assert.True(result.IsSuccessful);
             Assert.Equal(venue.Id, result.Venue?.Id);
             Assert.Equal(speaker.Id, Assert.Single(result.Speakers).Id);
-            Assert.Equal(equipment.Id, Assert.Single(result.Equipment).Id);
+            Assert.Null(result.EquipmentPackage);
+            Assert.Equal(550m, result.TotalCost);
+            Assert.Equal(10, result.TotalQualityScore);
+            Assert.Empty(result.FailureReasons);
+        }
+
+        [Fact]
+        public async Task Handle_WhenEventRequiresEquipment_ReturnsEquipmentPackage()
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var eventItem = await CreateEventAsync(
+                organizerUserId,
+                requiresEquipment: true);
+            await CreateResourceAsync("Main Hall", ResourceType.Venue, 350m, 120, "IT", 5);
+            await CreateResourceAsync("Architecture Speaker", ResourceType.Speaker, 200m, null, "it", 5);
+            var equipment = await CreateResourceAsync(
+                "Conference Package",
+                ResourceType.EquipmentPackage,
+                100m,
+                120,
+                "IT",
+                3);
+            var handler = CreateHandler(organizerUserId, ApplicationRoles.Organizer);
+
+            var result = await handler.Handle(
+                new GetEventRecommendationQuery(eventItem.Id),
+                CancellationToken.None);
+
+            Assert.True(result.IsSuccessful);
+            Assert.Equal(equipment.Id, result.EquipmentPackage?.Id);
             Assert.Equal(650m, result.TotalCost);
             Assert.Equal(13, result.TotalQualityScore);
-            Assert.Empty(result.FailureReasons);
         }
 
         [Fact]
@@ -50,7 +78,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
             Assert.False(result.IsSuccessful);
             Assert.Null(result.Venue);
             Assert.Empty(result.Speakers);
-            Assert.Empty(result.Equipment);
+            Assert.Null(result.EquipmentPackage);
             Assert.Contains(
                 "No feasible recommendation within event budget.",
                 result.FailureReasons);

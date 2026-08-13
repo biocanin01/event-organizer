@@ -7,6 +7,7 @@ namespace EventOrganizer.Application.Recommendations.Optimization
     {
         private const string NoVenueFailure = "No eligible venue candidates.";
         private const string NotEnoughSpeakersFailure = "Not enough eligible speaker candidates.";
+        private const string NoEquipmentPackageFailure = "No eligible equipment package candidates.";
         private const string NoFeasibleRecommendationFailure = "No feasible recommendation within event budget.";
 
         public RecommendationResult Optimize(
@@ -26,6 +27,11 @@ namespace EventOrganizer.Application.Recommendations.Optimization
                 return RecommendationResult.Failure(NotEnoughSpeakersFailure);
             }
 
+            if (eventItem.RequiresEquipment && candidates.EquipmentPackages.Count == 0)
+            {
+                return RecommendationResult.Failure(NoEquipmentPackageFailure);
+            }
+
             RecommendationResult? bestResult = null;
 
             foreach (var venue in OrderCandidates(candidates.Venues))
@@ -34,11 +40,15 @@ namespace EventOrganizer.Application.Recommendations.Optimization
                     OrderCandidates(candidates.Speakers),
                     eventItem.RequiredSpeakerCount))
                 {
-                    foreach (var equipment in GetSubsets(OrderCandidates(candidates.Equipment)))
+                    foreach (var equipmentPackage in GetEquipmentPackageOptions(
+                        eventItem,
+                        OrderCandidates(candidates.EquipmentPackages)))
                     {
                         var selectedResources = new[] { venue }
                             .Concat(speakers)
-                            .Concat(equipment)
+                            .Concat(equipmentPackage is null
+                                ? Array.Empty<ResourceCandidate>()
+                                : new[] { equipmentPackage })
                             .ToArray();
 
                         var totalCost = selectedResources.Sum(resource => resource.Cost);
@@ -52,7 +62,7 @@ namespace EventOrganizer.Application.Recommendations.Optimization
                         var result = RecommendationResult.Success(
                             venue,
                             speakers.ToArray(),
-                            equipment.ToArray(),
+                            equipmentPackage,
                             totalCost,
                             totalQualityScore);
 
@@ -97,7 +107,9 @@ namespace EventOrganizer.Application.Recommendations.Optimization
                 .Where(resource => resource is not null)
                 .Cast<ResourceCandidate>()
                 .Concat(result.Speakers)
-                .Concat(result.Equipment)
+                .Concat(result.EquipmentPackage is null
+                    ? Array.Empty<ResourceCandidate>()
+                    : new[] { result.EquipmentPackage })
                 .Select(resource => $"{resource.Name}|{resource.Id:N}")
                 .OrderBy(value => value, StringComparer.Ordinal);
 
@@ -138,24 +150,19 @@ namespace EventOrganizer.Application.Recommendations.Optimization
             }
         }
 
-        private static IEnumerable<IReadOnlyList<ResourceCandidate>> GetSubsets(
+        private static IEnumerable<ResourceCandidate?> GetEquipmentPackageOptions(
+            Event eventItem,
             IReadOnlyList<ResourceCandidate> candidates)
         {
-            var subsetCount = 1 << candidates.Count;
-
-            for (var mask = 0; mask < subsetCount; mask++)
+            if (!eventItem.RequiresEquipment)
             {
-                var subset = new List<ResourceCandidate>();
+                yield return null;
+                yield break;
+            }
 
-                for (var index = 0; index < candidates.Count; index++)
-                {
-                    if ((mask & (1 << index)) != 0)
-                    {
-                        subset.Add(candidates[index]);
-                    }
-                }
-
-                yield return subset;
+            foreach (var candidate in candidates)
+            {
+                yield return candidate;
             }
         }
     }

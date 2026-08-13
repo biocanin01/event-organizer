@@ -70,7 +70,13 @@ namespace EventOrganizer.Application.Recommendations.Candidates
                 .ToArray();
 
             var equipment = candidates
-                .Where(candidate => candidate.Type == ResourceType.EquipmentPackage)
+                .Where(candidate =>
+                    candidate.Type == ResourceType.EquipmentPackage
+                    && candidate.Capacity >= eventItem.Capacity
+                    && string.Equals(
+                        candidate.Area,
+                        eventItem.Area,
+                        StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
             return new ResourceCandidateSet(venues, speakers, equipment);

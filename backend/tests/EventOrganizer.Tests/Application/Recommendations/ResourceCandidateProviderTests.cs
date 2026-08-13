@@ -21,7 +21,9 @@ namespace EventOrganizer.Tests.Application.Recommendations
                 area: "it");
             var equipment = await CreateResourceAsync(
                 "Projector",
-                ResourceType.EquipmentPackage);
+                ResourceType.EquipmentPackage,
+                capacity: 120,
+                area: "IT");
 
             var provider = new ResourceCandidateProvider(DbContext);
 
@@ -31,7 +33,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
 
             Assert.Equal(venue.Id, Assert.Single(result.Venues).Id);
             Assert.Equal(speaker.Id, Assert.Single(result.Speakers).Id);
-            Assert.Equal(equipment.Id, Assert.Single(result.Equipment).Id);
+            Assert.Equal(equipment.Id, Assert.Single(result.EquipmentPackages).Id);
         }
 
         [Fact]
@@ -78,7 +80,30 @@ namespace EventOrganizer.Tests.Application.Recommendations
                 eventItem,
                 CancellationToken.None);
 
-            Assert.Empty(result.Equipment);
+            Assert.Empty(result.EquipmentPackages);
+        }
+
+        [Theory]
+        [InlineData(40, "IT")]
+        [InlineData(120, "Finance")]
+        public async Task GetCandidatesAsync_ExcludesEquipmentPackagesThatDoNotMatchEvent(
+            int capacity,
+            string area)
+        {
+            var eventItem = await CreateEventAsync();
+            await CreateResourceAsync(
+                "Mismatched Equipment Package",
+                ResourceType.EquipmentPackage,
+                capacity,
+                area);
+
+            var provider = new ResourceCandidateProvider(DbContext);
+
+            var result = await provider.GetCandidatesAsync(
+                eventItem,
+                CancellationToken.None);
+
+            Assert.Empty(result.EquipmentPackages);
         }
 
         [Theory]
@@ -95,7 +120,9 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync();
             var equipment = await CreateResourceAsync(
                 "Conference Projector",
-                ResourceType.EquipmentPackage);
+                ResourceType.EquipmentPackage,
+                capacity: 120,
+                area: "IT");
             await CreateBookingForResourceAsync(
                 equipment,
                 bookingStatus,
@@ -109,7 +136,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
 
             Assert.Equal(
                 shouldBeIncluded,
-                result.Equipment.Any(candidate => candidate.Id == equipment.Id));
+                result.EquipmentPackages.Any(candidate => candidate.Id == equipment.Id));
         }
 
         [Fact]
@@ -118,7 +145,9 @@ namespace EventOrganizer.Tests.Application.Recommendations
             var eventItem = await CreateEventAsync();
             var equipment = await CreateResourceAsync(
                 "Available Projector",
-                ResourceType.EquipmentPackage);
+                ResourceType.EquipmentPackage,
+                capacity: 120,
+                area: "IT");
             await CreateBookingForResourceAsync(
                 equipment,
                 EventResourceBookingStatus.Approved,
@@ -130,7 +159,7 @@ namespace EventOrganizer.Tests.Application.Recommendations
                 eventItem,
                 CancellationToken.None);
 
-            Assert.Equal(equipment.Id, Assert.Single(result.Equipment).Id);
+            Assert.Equal(equipment.Id, Assert.Single(result.EquipmentPackages).Id);
         }
 
         private async Task<Resource> CreateResourceAsync(

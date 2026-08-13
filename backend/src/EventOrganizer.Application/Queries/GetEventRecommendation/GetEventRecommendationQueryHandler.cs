@@ -65,7 +65,9 @@ namespace EventOrganizer.Application.Queries.GetEventRecommendation
                     ? null
                     : MapResource(recommendation.Venue),
                 recommendation.Speakers.Select(MapResource).ToArray(),
-                recommendation.Equipment.Select(MapResource).ToArray(),
+                recommendation.EquipmentPackage is null
+                    ? null
+                    : MapResource(recommendation.EquipmentPackage),
                 recommendation.TotalCost,
                 recommendation.TotalQualityScore,
                 recommendation.FailureReasons);
