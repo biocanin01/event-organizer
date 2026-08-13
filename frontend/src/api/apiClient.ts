@@ -9,6 +9,7 @@ interface ApiErrorPayload {
   status?: number
   title?: string
   errors?: string[]
+  conflicts?: unknown[]
 }
 
 function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
@@ -63,6 +64,7 @@ export async function apiRequest<T>(
       errorPayload?.status ?? response.status,
       message,
       errorPayload?.errors ?? [],
+      errorPayload?.conflicts ?? [],
     )
   }
 

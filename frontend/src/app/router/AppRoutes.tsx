@@ -11,6 +11,7 @@ import { LoginPage } from '../../pages/LoginPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
 import { PlaceholderSectionPage } from '../../pages/PlaceholderSectionPage'
 import { RegisterPage } from '../../pages/RegisterPage'
+import { EventPlanningPage } from '../../features/planning/EventPlanningPage'
 import { ResourcesPage } from '../../features/resources/ResourcesPage'
 import { AppShell } from '../layout/AppShell'
 
@@ -51,6 +52,10 @@ export function AppRoutes() {
           <Route
             path="resources"
             element={<ResourcesPage />}
+          />
+          <Route
+            path="events/:eventId/planning"
+            element={<EventPlanningPage />}
           />
           <Route
             path="reports"

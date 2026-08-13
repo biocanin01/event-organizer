@@ -22,6 +22,13 @@ export async function listManageableEvents(
   return request<EventItem[]>('/events/manage')
 }
 
+export async function getManageableEventById(
+  request: AuthenticatedRequest,
+  eventId: string,
+): Promise<EventItem> {
+  return request<EventItem>(`/events/manage/${eventId}`)
+}
+
 export async function createEvent(
   request: AuthenticatedRequest,
   payload: CreateEventRequest,

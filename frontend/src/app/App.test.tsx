@@ -869,6 +869,676 @@ describe('App', () => {
     )
   })
 
+  it('redirects participants away from the event planning workspace', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events/event-id/planning')
+
+    renderApplication()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument()
+  })
+
+  it('opens event planning from manageable events and saves a draft selection', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'draft-event-id',
+              title: 'Planning Workshop',
+              description: 'Draft event.',
+              startsAtUtc: '2026-09-01T09:00:00Z',
+              endsAtUtc: '2026-09-01T13:00:00Z',
+              capacity: 80,
+              budget: 1000,
+              area: 'IT',
+              requiredSpeakerCount: 1,
+              requiresEquipment: false,
+              organizerUserId: 'participant-id',
+              status: 'Draft',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      if (path === '/events/manage/draft-event-id') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'draft-event-id',
+            title: 'Planning Workshop',
+            description: 'Draft event.',
+            startsAtUtc: '2026-09-01T09:00:00Z',
+            endsAtUtc: '2026-09-01T13:00:00Z',
+            capacity: 80,
+            budget: 1000,
+            area: 'IT',
+            requiredSpeakerCount: 1,
+            requiresEquipment: false,
+            organizerUserId: 'participant-id',
+            status: 'Draft',
+            createdAtUtc: '2026-08-01T10:00:00Z',
+            updatedAtUtc: null,
+          }),
+        )
+      }
+
+      if (path === '/events/draft-event-id/booking') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'draft-event-id',
+            status: 'Draft',
+            version: 1,
+            submittedAtUtc: null,
+            holdExpiresAtUtc: null,
+            decisionReason: null,
+            decidedAtUtc: null,
+            decidedByUserId: null,
+            totalCost: 0,
+            venue: null,
+            speakers: [],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'venue-id',
+              name: 'Main Hall',
+              description: 'Large venue.',
+              type: 'Venue',
+              status: 'Available',
+              cost: 500,
+              qualityScore: 4,
+              version: 1,
+              capacity: 120,
+              expertiseArea: null,
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+            {
+              id: 'speaker-id',
+              name: 'Architecture Lecturer',
+              description: 'Domain expert.',
+              type: 'Speaker',
+              status: 'Available',
+              cost: 250,
+              qualityScore: 5,
+              version: 1,
+              capacity: null,
+              expertiseArea: 'IT',
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/events/draft-event-id/booking/draft' &&
+        init?.method === 'PUT'
+      ) {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'draft-event-id',
+            status: 'Draft',
+            version: 2,
+            submittedAtUtc: null,
+            holdExpiresAtUtc: null,
+            decisionReason: null,
+            decidedAtUtc: null,
+            decidedByUserId: null,
+            totalCost: 750,
+            venue: {
+              id: 'venue-id',
+              name: 'Main Hall',
+              type: 'Venue',
+              cost: 500,
+              qualityScore: 4,
+            },
+            speakers: [
+              {
+                id: 'speaker-id',
+                name: 'Architecture Lecturer',
+                type: 'Speaker',
+                cost: 250,
+                qualityScore: 5,
+              },
+            ],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events')
+
+    renderApplication()
+
+    await screen.findByText('Planning Workshop')
+    await userEvent.click(screen.getByRole('link', { name: 'Planiranje' }))
+    await screen.findByRole('heading', { name: 'Planning Workshop' })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Sala' }))
+    await userEvent.click(screen.getByRole('option', { name: /Main Hall/ }))
+    await userEvent.click(screen.getByRole('combobox', { name: 'Predavači' }))
+    await userEvent.click(
+      await screen.findByRole('option', { name: /Architecture Lecturer/ }),
+    )
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj draft' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/events/draft-event-id/booking/draft`,
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('"equipmentPackageId":null'),
+        }),
+      ),
+    )
+  })
+
+  it('applies a recommendation without saving until the draft is submitted', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage/draft-event-id') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'draft-event-id',
+            title: 'Equipment Workshop',
+            description: 'Draft event.',
+            startsAtUtc: '2026-09-01T09:00:00Z',
+            endsAtUtc: '2026-09-01T13:00:00Z',
+            capacity: 80,
+            budget: 1200,
+            area: 'IT',
+            requiredSpeakerCount: 1,
+            requiresEquipment: true,
+            organizerUserId: 'participant-id',
+            status: 'Draft',
+            createdAtUtc: '2026-08-01T10:00:00Z',
+            updatedAtUtc: null,
+          }),
+        )
+      }
+
+      if (path === '/events/draft-event-id/booking') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'draft-event-id',
+            status: 'Draft',
+            version: 3,
+            submittedAtUtc: null,
+            holdExpiresAtUtc: null,
+            decisionReason: null,
+            decidedAtUtc: null,
+            decidedByUserId: null,
+            totalCost: 0,
+            venue: null,
+            speakers: [],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'venue-id',
+              name: 'Main Hall',
+              description: 'Large venue.',
+              type: 'Venue',
+              status: 'Available',
+              cost: 500,
+              qualityScore: 4,
+              version: 1,
+              capacity: 120,
+              expertiseArea: null,
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+            {
+              id: 'speaker-id',
+              name: 'Architecture Lecturer',
+              description: 'Domain expert.',
+              type: 'Speaker',
+              status: 'Available',
+              cost: 250,
+              qualityScore: 5,
+              version: 1,
+              capacity: null,
+              expertiseArea: 'IT',
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+            {
+              id: 'package-id',
+              name: 'Conference Package',
+              description: 'Audio and projection.',
+              type: 'EquipmentPackage',
+              status: 'Available',
+              cost: 300,
+              qualityScore: 4,
+              version: 1,
+              capacity: null,
+              expertiseArea: null,
+              providerName: 'AV Provider',
+              supportedCapacity: 100,
+              serviceArea: 'IT',
+              includesTechnicalSupport: true,
+              contentsSummary: 'Projector and microphones.',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      if (path === '/events/draft-event-id/recommendation') {
+        return Promise.resolve(
+          jsonResponse({
+            isSuccessful: true,
+            venue: {
+              id: 'venue-id',
+              name: 'Main Hall',
+              type: 'Venue',
+              cost: 500,
+              capacity: 120,
+              area: null,
+              qualityScore: 4,
+            },
+            speakers: [
+              {
+                id: 'speaker-id',
+                name: 'Architecture Lecturer',
+                type: 'Speaker',
+                cost: 250,
+                capacity: null,
+                area: 'IT',
+                qualityScore: 5,
+              },
+            ],
+            equipmentPackage: {
+              id: 'package-id',
+              name: 'Conference Package',
+              type: 'EquipmentPackage',
+              cost: 300,
+              capacity: 100,
+              area: 'IT',
+              qualityScore: 4,
+            },
+            totalCost: 1050,
+            totalQualityScore: 13,
+            failureReasons: [],
+          }),
+        )
+      }
+
+      if (
+        path === '/events/draft-event-id/booking/draft' &&
+        init?.method === 'PUT'
+      ) {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'draft-event-id',
+            status: 'Draft',
+            version: 4,
+            submittedAtUtc: null,
+            holdExpiresAtUtc: null,
+            decisionReason: null,
+            decidedAtUtc: null,
+            decidedByUserId: null,
+            totalCost: 1050,
+            venue: {
+              id: 'venue-id',
+              name: 'Main Hall',
+              type: 'Venue',
+              cost: 500,
+              qualityScore: 4,
+            },
+            speakers: [
+              {
+                id: 'speaker-id',
+                name: 'Architecture Lecturer',
+                type: 'Speaker',
+                cost: 250,
+                qualityScore: 5,
+              },
+            ],
+            equipmentPackage: {
+              id: 'package-id',
+              name: 'Conference Package',
+              type: 'EquipmentPackage',
+              cost: 300,
+              qualityScore: 4,
+            },
+          }),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events/draft-event-id/planning')
+
+    renderApplication()
+
+    await screen.findByRole('heading', { name: 'Equipment Workshop' })
+    await userEvent.click(screen.getByRole('button', { name: 'Prikaži preporuku' }))
+    expect(await screen.findByText(/Conference Package/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Primeni preporuku' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj draft' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/events/draft-event-id/booking/draft`,
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('"equipmentPackageId":"package-id"'),
+        }),
+      ),
+    )
+  })
+
+  it('shows booking submission conflicts in the planning workspace', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage/draft-event-id') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'draft-event-id',
+            title: 'Conflict Workshop',
+            description: 'Draft event.',
+            startsAtUtc: '2026-09-01T09:00:00Z',
+            endsAtUtc: '2026-09-01T13:00:00Z',
+            capacity: 80,
+            budget: 1000,
+            area: 'IT',
+            requiredSpeakerCount: 1,
+            requiresEquipment: false,
+            organizerUserId: 'participant-id',
+            status: 'Draft',
+            createdAtUtc: '2026-08-01T10:00:00Z',
+            updatedAtUtc: null,
+          }),
+        )
+      }
+
+      if (path === '/events/draft-event-id/booking') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'draft-event-id',
+            status: 'Draft',
+            version: 5,
+            submittedAtUtc: null,
+            holdExpiresAtUtc: null,
+            decisionReason: null,
+            decidedAtUtc: null,
+            decidedByUserId: null,
+            totalCost: 750,
+            venue: {
+              id: 'venue-id',
+              name: 'Main Hall',
+              type: 'Venue',
+              cost: 500,
+              qualityScore: 4,
+            },
+            speakers: [
+              {
+                id: 'speaker-id',
+                name: 'Architecture Lecturer',
+                type: 'Speaker',
+                cost: 250,
+                qualityScore: 5,
+              },
+            ],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'venue-id',
+              name: 'Main Hall',
+              description: 'Large venue.',
+              type: 'Venue',
+              status: 'Available',
+              cost: 500,
+              qualityScore: 4,
+              version: 1,
+              capacity: 120,
+              expertiseArea: null,
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+            {
+              id: 'speaker-id',
+              name: 'Architecture Lecturer',
+              description: 'Domain expert.',
+              type: 'Speaker',
+              status: 'Available',
+              cost: 250,
+              qualityScore: 5,
+              version: 1,
+              capacity: null,
+              expertiseArea: 'IT',
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/events/draft-event-id/booking/submit' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(
+            {
+              status: 409,
+              title: 'Booking resources conflict with another event.',
+              errors: [],
+              conflicts: [
+                {
+                  resourceId: 'venue-id',
+                  resourceName: 'Main Hall',
+                  eventId: 'other-event-id',
+                  startsAtUtc: '2026-09-01T10:00:00Z',
+                  endsAtUtc: '2026-09-01T12:00:00Z',
+                },
+              ],
+            },
+            409,
+          ),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events/draft-event-id/planning')
+
+    renderApplication()
+
+    await screen.findByRole('heading', { name: 'Conflict Workshop' })
+    await userEvent.click(screen.getByRole('button', { name: 'Podnesi zahtev' }))
+
+    expect(
+      await screen.findByText('Booking resources conflict with another event.'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText(/Main Hall/).length).toBeGreaterThan(0)
+  })
+
+  it('publishes an event from planning when booking is approved', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage/draft-event-id') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'draft-event-id',
+            title: 'Approved Workshop',
+            description: 'Draft event.',
+            startsAtUtc: '2026-09-01T09:00:00Z',
+            endsAtUtc: '2026-09-01T13:00:00Z',
+            capacity: 80,
+            budget: 1000,
+            area: 'IT',
+            requiredSpeakerCount: 1,
+            requiresEquipment: false,
+            organizerUserId: 'participant-id',
+            status: 'Draft',
+            createdAtUtc: '2026-08-01T10:00:00Z',
+            updatedAtUtc: null,
+          }),
+        )
+      }
+
+      if (path === '/events/draft-event-id/booking') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'draft-event-id',
+            status: 'Approved',
+            version: 6,
+            submittedAtUtc: '2026-08-01T10:00:00Z',
+            holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+            decisionReason: null,
+            decidedAtUtc: '2026-08-01T11:00:00Z',
+            decidedByUserId: 'admin-id',
+            totalCost: 750,
+            venue: {
+              id: 'venue-id',
+              name: 'Main Hall',
+              type: 'Venue',
+              cost: 500,
+              qualityScore: 4,
+            },
+            speakers: [
+              {
+                id: 'speaker-id',
+                name: 'Architecture Lecturer',
+                type: 'Speaker',
+                cost: 250,
+                qualityScore: 5,
+              },
+            ],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
+      if (
+        path === '/events/draft-event-id/publish' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(new Response(undefined, { status: 204 }))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events/draft-event-id/planning')
+
+    renderApplication()
+
+    await screen.findByRole('heading', { name: 'Approved Workshop' })
+    await userEvent.click(screen.getByRole('button', { name: 'Objavi događaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/events/draft-event-id/publish`,
+        expect.objectContaining({ method: 'PATCH' }),
+      ),
+    )
+  })
+
   it('shows backend conflict errors when publishing is blocked', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(input.toString())

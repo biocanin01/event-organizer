@@ -2,6 +2,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import PublishRoundedIcon from "@mui/icons-material/PublishRounded";
 import {
   Alert,
@@ -18,6 +19,7 @@ import {
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Link } from "react-router";
 import { ApiError } from "../../api/ApiError";
 import { StatusChip } from "../../shared/components/StatusChip";
 import { formatDateTime } from "../../shared/format/dateTime";
@@ -274,6 +276,17 @@ export function EventsPage() {
                           </Button>
                         </>
                       )}
+                      {eventItem.status !== "Cancelled" &&
+                        eventItem.status !== "Completed" && (
+                          <Button
+                            component={Link}
+                            to={`/events/${eventItem.id}/planning`}
+                            size="small"
+                            startIcon={<EventAvailableRoundedIcon />}
+                          >
+                            Planiranje
+                          </Button>
+                        )}
                       {eventItem.status === "Published" &&
                         hasEnded(eventItem) && (
                           <Button
