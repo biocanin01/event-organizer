@@ -1,0 +1,13 @@
+namespace EventOrganizer.Api.Contracts.Events
+{
+    public sealed record UpdateEventRequest(
+        string Title,
+        string Description,
+        DateTime StartsAtUtc,
+        DateTime EndsAtUtc,
+        int Capacity,
+        decimal Budget,
+        string Area,
+        int RequiredSpeakerCount,
+        bool RequiresEquipment = false);
+}

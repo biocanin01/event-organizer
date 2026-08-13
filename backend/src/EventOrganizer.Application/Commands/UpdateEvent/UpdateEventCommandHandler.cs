@@ -6,14 +6,14 @@ using EventOrganizer.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventOrganizer.Application.Commands.PublishEvent
+namespace EventOrganizer.Application.Commands.UpdateEvent
 {
-    public sealed class PublishEventCommandHandler : IRequestHandler<PublishEventCommand>
+    public sealed class UpdateEventCommandHandler : IRequestHandler<UpdateEventCommand>
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly EventAuthorizationService _eventAuthorizationService;
 
-        public PublishEventCommandHandler(
+        public UpdateEventCommandHandler(
             IApplicationDbContext dbContext,
             EventAuthorizationService eventAuthorizationService)
         {
@@ -21,7 +21,9 @@ namespace EventOrganizer.Application.Commands.PublishEvent
             _eventAuthorizationService = eventAuthorizationService;
         }
 
-        public async Task Handle(PublishEventCommand request, CancellationToken cancellationToken)
+        public async Task Handle(
+            UpdateEventCommand request,
+            CancellationToken cancellationToken)
         {
             var eventItem = await _dbContext.Events
                 .FirstOrDefaultAsync(
@@ -35,10 +37,9 @@ namespace EventOrganizer.Application.Commands.PublishEvent
 
             _eventAuthorizationService.EnsureCanManage(eventItem);
 
-            var now = DateTime.UtcNow;
-            if (eventItem.StartsAtUtc <= now)
+            if (eventItem.Status != EventStatus.Draft)
             {
-                throw new ConflictException("Past events cannot be published.");
+                throw new ConflictException("Only draft events can be updated.");
             }
 
             var booking = await _dbContext.EventResourceBookings
@@ -49,17 +50,32 @@ namespace EventOrganizer.Application.Commands.PublishEvent
 
             if (booking is null)
             {
-                throw new ConflictException("Event must have an approved booking before publishing.");
+                throw new ConflictException("Event must have a draft booking before it can be updated.");
             }
 
-            if (booking.Status != EventResourceBookingStatus.Approved)
+            if (booking.Status != EventResourceBookingStatus.Draft)
             {
-                throw new ConflictException("Event booking must be approved before publishing.");
+                throw new ConflictException(
+                    "Event details can be updated only while the booking is draft.");
             }
 
             try
             {
-                eventItem.Publish(now);
+                eventItem.UpdateDetails(
+                    request.Title,
+                    request.Description,
+                    request.StartsAtUtc,
+                    request.EndsAtUtc,
+                    request.Capacity,
+                    request.Budget,
+                    request.Area,
+                    request.RequiredSpeakerCount,
+                    request.RequiresEquipment,
+                    DateTime.UtcNow);
+            }
+            catch (ArgumentException exception)
+            {
+                throw new ConflictException(exception.Message, exception);
             }
             catch (InvalidOperationException exception)
             {

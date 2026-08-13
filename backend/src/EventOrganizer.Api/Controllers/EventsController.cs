@@ -2,15 +2,19 @@ using EventOrganizer.Api.Authorization;
 using EventOrganizer.Api.Contracts.Bookings;
 using EventOrganizer.Api.Contracts.Events;
 using EventOrganizer.Application.Commands.CancelEvent;
+using EventOrganizer.Application.Commands.CompleteEvent;
 using EventOrganizer.Application.Commands.CreateEvent;
 using EventOrganizer.Application.Commands.PublishEvent;
 using EventOrganizer.Application.Commands.ReviseEventBooking;
 using EventOrganizer.Application.Commands.SubmitEventBooking;
+using EventOrganizer.Application.Commands.UpdateEvent;
 using EventOrganizer.Application.Commands.UpdateEventBookingDraft;
 using EventOrganizer.Application.Commands.WithdrawEventBooking;
+using EventOrganizer.Application.Queries.GetEventById;
 using EventOrganizer.Application.Queries.GetEventBooking;
 using EventOrganizer.Application.Queries.GetEventRecommendation;
 using EventOrganizer.Application.Queries.GetPublishedEventById;
+using EventOrganizer.Application.Queries.ListEvents;
 using EventOrganizer.Application.Queries.ListPublishedEvents;
 using EventOrganizer.Application.Responses;
 using MediatR;
@@ -28,6 +32,43 @@ namespace EventOrganizer.Api.Controllers
         public EventsController(ISender sender)
         {
             _sender = sender;
+        }
+
+        [HttpGet("manage")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(IReadOnlyList<EventResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<IReadOnlyList<EventResponse>>> ListManageable(
+            CancellationToken cancellationToken)
+        {
+            var events = await _sender.Send(
+                new ListEventsQuery(),
+                cancellationToken);
+
+            return Ok(events);
+        }
+
+        [HttpGet("manage/{id:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(typeof(EventResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<EventResponse>> GetManageableById(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            var eventItem = await _sender.Send(
+                new GetEventByIdQuery(id),
+                cancellationToken);
+
+            if (eventItem is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(eventItem);
         }
 
         [HttpGet]
@@ -82,6 +123,36 @@ namespace EventOrganizer.Api.Controllers
             return StatusCode(
                 StatusCodes.Status201Created,
                 new CreateEventResponse(eventId));
+        }
+
+        [HttpPut("{id:guid}")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Update(
+            Guid id,
+            UpdateEventRequest request,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(
+                new UpdateEventCommand(
+                    id,
+                    request.Title,
+                    request.Description,
+                    request.StartsAtUtc,
+                    request.EndsAtUtc,
+                    request.Capacity,
+                    request.Budget,
+                    request.Area,
+                    request.RequiredSpeakerCount,
+                    request.RequiresEquipment),
+                cancellationToken);
+
+            return NoContent();
         }
 
         [HttpGet("{id:guid}/booking")]
@@ -234,6 +305,25 @@ namespace EventOrganizer.Api.Controllers
         {
             await _sender.Send(
                 new CancelEventCommand(id),
+                cancellationToken);
+
+            return NoContent();
+        }
+
+        [HttpPatch("{id:guid}/complete")]
+        [Authorize(Policy = AuthorizationPolicies.CanManageEvents)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Complete(
+            Guid id,
+            CancellationToken cancellationToken)
+        {
+            await _sender.Send(
+                new CompleteEventCommand(id),
                 cancellationToken);
 
             return NoContent();

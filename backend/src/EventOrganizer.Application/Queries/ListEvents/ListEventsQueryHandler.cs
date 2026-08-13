@@ -1,4 +1,6 @@
-﻿using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Common.Constants;
+using EventOrganizer.Application.Common.Exceptions;
+using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Application.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -9,16 +11,43 @@ namespace EventOrganizer.Application.Queries.ListEvents
         : IRequestHandler<ListEventsQuery, IReadOnlyList<EventResponse>>
     {
         private readonly IApplicationDbContext _dbContext;
+        private readonly ICurrentUserService _currentUserService;
 
-        public ListEventsQueryHandler(IApplicationDbContext dbContext)
+        public ListEventsQueryHandler(
+            IApplicationDbContext dbContext,
+            ICurrentUserService currentUserService)
         {
             _dbContext = dbContext;
+            _currentUserService = currentUserService;
         }
 
-        public async Task<IReadOnlyList<EventResponse>> Handle(ListEventsQuery request, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<EventResponse>> Handle(
+            ListEventsQuery request,
+            CancellationToken cancellationToken)
         {
-            return await _dbContext.Events
+            if (!_currentUserService.IsAuthenticated || _currentUserService.UserId is null)
+            {
+                throw new UnauthorizedException(
+                    "An authenticated user is required to list manageable events.");
+            }
+
+            var query = _dbContext.Events
                 .AsNoTracking()
+                .AsQueryable();
+
+            if (!_currentUserService.IsInRole(ApplicationRoles.Admin))
+            {
+                if (!_currentUserService.IsInRole(ApplicationRoles.Organizer))
+                {
+                    throw new ForbiddenException(
+                        "Only organizers and admins can list manageable events.");
+                }
+
+                var organizerUserId = _currentUserService.UserId.Value;
+                query = query.Where(eventItem => eventItem.OrganizerUserId == organizerUserId);
+            }
+
+            return await query
                 .OrderBy(eventItem => eventItem.StartsAtUtc)
                 .Select(eventItem => new EventResponse(
                     eventItem.Id,

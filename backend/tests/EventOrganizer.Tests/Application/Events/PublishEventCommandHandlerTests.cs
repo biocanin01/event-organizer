@@ -3,7 +3,9 @@ using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Tests.Application.Events
 {
@@ -14,6 +16,7 @@ namespace EventOrganizer.Tests.Application.Events
         {
             var organizerUserId = await CreateOrganizerUserAsync();
             var eventItem = await CreateEventAsync(organizerUserId);
+            await CreateApprovedBookingAsync(eventItem);
             var handler = new PublishEventCommandHandler(
                 DbContext,
                 CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
@@ -22,8 +25,9 @@ namespace EventOrganizer.Tests.Application.Events
                 new PublishEventCommand(eventItem.Id),
                 CancellationToken.None);
 
-            Assert.Equal(EventStatus.Published, eventItem.Status);
-            Assert.NotNull(eventItem.UpdatedAtUtc);
+            var publishedEvent = await ReloadEventAsync(eventItem.Id);
+            Assert.Equal(EventStatus.Published, publishedEvent.Status);
+            Assert.NotNull(publishedEvent.UpdatedAtUtc);
         }
 
         [Fact]
@@ -32,6 +36,7 @@ namespace EventOrganizer.Tests.Application.Events
             var organizerUserId = await CreateOrganizerUserAsync();
             var adminUserId = await CreateOrganizerUserAsync("admin@example.com");
             var eventItem = await CreateEventAsync(organizerUserId);
+            await CreateApprovedBookingAsync(eventItem);
             var handler = new PublishEventCommandHandler(
                 DbContext,
                 CreateAuthorizationService(adminUserId, ApplicationRoles.Admin));
@@ -40,7 +45,68 @@ namespace EventOrganizer.Tests.Application.Events
                 new PublishEventCommand(eventItem.Id),
                 CancellationToken.None);
 
-            Assert.Equal(EventStatus.Published, eventItem.Status);
+            Assert.Equal(EventStatus.Published, (await ReloadEventAsync(eventItem.Id)).Status);
+        }
+
+        [Fact]
+        public async Task Handle_WhenBookingIsMissing_ThrowsConflictException()
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var eventItem = await CreateEventAsync(organizerUserId);
+            var handler = new PublishEventCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+
+            await Assert.ThrowsAsync<ConflictException>(() =>
+                handler.Handle(
+                    new PublishEventCommand(eventItem.Id),
+                    CancellationToken.None));
+        }
+
+        [Theory]
+        [InlineData(EventResourceBookingStatus.Draft)]
+        [InlineData(EventResourceBookingStatus.Submitted)]
+        [InlineData(EventResourceBookingStatus.Rejected)]
+        [InlineData(EventResourceBookingStatus.Expired)]
+        public async Task Handle_WhenBookingIsNotApproved_ThrowsConflictException(
+            EventResourceBookingStatus status)
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var eventItem = await CreateEventAsync(organizerUserId);
+            var booking = await CreateBookingAsync(eventItem);
+            if (status != EventResourceBookingStatus.Draft)
+            {
+                await SetBookingStatusAsync(booking.Id, status);
+            }
+
+            var handler = new PublishEventCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+
+            await Assert.ThrowsAsync<ConflictException>(() =>
+                handler.Handle(
+                    new PublishEventCommand(eventItem.Id),
+                    CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task Handle_WhenEventStartIsInPast_ThrowsConflictException()
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var startsAtUtc = DateTime.UtcNow.AddHours(-2);
+            var eventItem = await CreateEventAsync(
+                organizerUserId,
+                startsAtUtc: startsAtUtc,
+                endsAtUtc: startsAtUtc.AddHours(1));
+            await CreateApprovedBookingAsync(eventItem);
+            var handler = new PublishEventCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+
+            await Assert.ThrowsAsync<ConflictException>(() =>
+                handler.Handle(
+                    new PublishEventCommand(eventItem.Id),
+                    CancellationToken.None));
         }
 
         [Fact]
@@ -102,6 +168,20 @@ namespace EventOrganizer.Tests.Application.Events
                 CancellationToken.None);
 
             await Assert.ThrowsAsync<NotFoundException>(act);
+        }
+
+        private async Task CreateApprovedBookingAsync(
+            EventOrganizer.Domain.Events.Event eventItem)
+        {
+            var booking = await CreateBookingAsync(eventItem);
+            await SetBookingStatusAsync(booking.Id, EventResourceBookingStatus.Approved);
+        }
+
+        private async Task<EventOrganizer.Domain.Events.Event> ReloadEventAsync(Guid eventId)
+        {
+            DbContext.ChangeTracker.Clear();
+
+            return await DbContext.Events.SingleAsync(eventItem => eventItem.Id == eventId);
         }
 
         private static EventAuthorizationService CreateAuthorizationService(

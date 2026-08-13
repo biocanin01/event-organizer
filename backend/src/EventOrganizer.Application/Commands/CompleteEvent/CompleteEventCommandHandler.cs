@@ -1,19 +1,18 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
-using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventOrganizer.Application.Commands.PublishEvent
+namespace EventOrganizer.Application.Commands.CompleteEvent
 {
-    public sealed class PublishEventCommandHandler : IRequestHandler<PublishEventCommand>
+    public sealed class CompleteEventCommandHandler : IRequestHandler<CompleteEventCommand>
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly EventAuthorizationService _eventAuthorizationService;
 
-        public PublishEventCommandHandler(
+        public CompleteEventCommandHandler(
             IApplicationDbContext dbContext,
             EventAuthorizationService eventAuthorizationService)
         {
@@ -21,7 +20,9 @@ namespace EventOrganizer.Application.Commands.PublishEvent
             _eventAuthorizationService = eventAuthorizationService;
         }
 
-        public async Task Handle(PublishEventCommand request, CancellationToken cancellationToken)
+        public async Task Handle(
+            CompleteEventCommand request,
+            CancellationToken cancellationToken)
         {
             var eventItem = await _dbContext.Events
                 .FirstOrDefaultAsync(
@@ -34,32 +35,15 @@ namespace EventOrganizer.Application.Commands.PublishEvent
             }
 
             _eventAuthorizationService.EnsureCanManage(eventItem);
-
             var now = DateTime.UtcNow;
-            if (eventItem.StartsAtUtc <= now)
+            if (eventItem.EndsAtUtc > now)
             {
-                throw new ConflictException("Past events cannot be published.");
-            }
-
-            var booking = await _dbContext.EventResourceBookings
-                .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    booking => booking.EventId == request.EventId,
-                    cancellationToken);
-
-            if (booking is null)
-            {
-                throw new ConflictException("Event must have an approved booking before publishing.");
-            }
-
-            if (booking.Status != EventResourceBookingStatus.Approved)
-            {
-                throw new ConflictException("Event booking must be approved before publishing.");
+                throw new ConflictException("Only events that have ended can be completed.");
             }
 
             try
             {
-                eventItem.Publish(now);
+                eventItem.Complete(now);
             }
             catch (InvalidOperationException exception)
             {
