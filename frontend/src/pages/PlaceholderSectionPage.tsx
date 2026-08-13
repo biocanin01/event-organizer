@@ -19,7 +19,7 @@ export function PlaceholderSectionPage({
       </Stack>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography color="text.secondary">
-          Ova stranica je deo aplikacione navigacije i bice implementirana kroz
+          Ova stranica je deo aplikacione navigacije i biće implementirana kroz
           odgovarajuci domain issue.
         </Typography>
       </Paper>

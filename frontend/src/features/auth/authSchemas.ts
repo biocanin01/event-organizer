@@ -10,12 +10,12 @@ export const registerSchema = z.object({
     .string()
     .trim()
     .min(2, 'Ime i prezime moraju imati najmanje 2 karaktera.')
-    .max(150, 'Ime i prezime mogu imati najvise 150 karaktera.'),
+    .max(150, 'Ime i prezime mogu imati najviše 150 karaktera.'),
   email: z.email('Unesite ispravnu email adresu.'),
   password: z
     .string()
     .min(8, 'Lozinka mora imati najmanje 8 karaktera.')
-    .max(100, 'Lozinka moze imati najvise 100 karaktera.'),
+    .max(100, 'Lozinka može imati najviše 100 karaktera.'),
 })
 
 export type LoginFormValues = z.infer<typeof loginSchema>

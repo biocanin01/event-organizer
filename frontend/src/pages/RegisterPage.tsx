@@ -64,7 +64,7 @@ export function RegisterPage() {
               Kreiranje naloga
             </Typography>
             <Typography color="text.secondary">
-              Novi korisnici pocinju kao Participant.
+              Novi korisnici počinju kao Participant.
             </Typography>
           </Stack>
 
@@ -105,7 +105,7 @@ export function RegisterPage() {
           </Stack>
 
           <Typography color="text.secondary">
-            Vec imate nalog?{' '}
+            Već imate nalog?{' '}
             <MuiLink component={Link} to="/login">
               Prijavite se
             </MuiLink>

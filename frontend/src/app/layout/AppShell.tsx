@@ -52,7 +52,7 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    label: 'Dogadjaji',
+    label: 'Događaji',
     path: '/events',
     icon: <EventNoteRoundedIcon />,
     roles: [
@@ -90,7 +90,7 @@ const navigationItems: NavigationItem[] = [
     roles: [applicationRoles.admin],
   },
   {
-    label: 'Izvestaji',
+    label: 'Izveštaji',
     path: '/reports',
     icon: <RateReviewRoundedIcon />,
     roles: [applicationRoles.organizer, applicationRoles.admin],

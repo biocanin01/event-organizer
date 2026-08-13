@@ -12,13 +12,13 @@ export function DashboardPage() {
           Dashboard
         </Typography>
         <Typography color="text.secondary">
-          Dobrodosli, {session?.user.fullName}. Ovde ce biti pregled aktivnosti
+          Dobrodošli, {session?.user.fullName}. Ovde će biti pregled aktivnosti
           prema vasoj roli.
         </Typography>
       </Stack>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography color="text.secondary">
-          Sledeci issue-i popunjavaju ove sekcije stvarnim podacima iz backend
+          Sledeći issue-i popunjavaju ove sekcije stvarnim podacima iz backend
           modula.
         </Typography>
       </Paper>

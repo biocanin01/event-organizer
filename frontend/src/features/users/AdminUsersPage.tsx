@@ -130,7 +130,7 @@ export function AdminUsersPage() {
             variant="contained"
             startIcon={<SearchRoundedIcon />}
           >
-            Pretrazi
+            Pretraži
           </Button>
         </Stack>
       </Paper>
@@ -149,7 +149,7 @@ export function AdminUsersPage() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={5}>Ucitavanje korisnika...</TableCell>
+                <TableCell colSpan={5}>Učitavanje korisnika...</TableCell>
               </TableRow>
             )}
             {!isLoading && users.length === 0 && (

@@ -127,7 +127,7 @@ export function AdminOrganizerRequestsPage() {
             Zahtevi za organizatore
           </Typography>
           <Typography color="text.secondary">
-            Pregled i odlucivanje o zahtevima za Organizer rolu.
+            Pregled i odlučivanje o zahtevima za Organizer rolu.
           </Typography>
         </Stack>
         <FormControl sx={{ minWidth: 220 }}>
@@ -165,7 +165,7 @@ export function AdminOrganizerRequestsPage() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={5}>Ucitavanje zahteva...</TableCell>
+                <TableCell colSpan={5}>Učitavanje zahteva...</TableCell>
               </TableRow>
             )}
             {!isLoading && requests.length === 0 && (
@@ -186,7 +186,7 @@ export function AdminOrganizerRequestsPage() {
                         {user?.fullName ?? request.userId}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {user?.email ?? 'Korisnik nije ucitan'}
+                        {user?.email ?? 'Korisnik nije učitan'}
                       </Typography>
                     </Stack>
                   </TableCell>

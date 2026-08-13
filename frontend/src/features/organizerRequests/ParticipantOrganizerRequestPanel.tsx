@@ -32,7 +32,7 @@ const organizerRequestSchema = z.object({
     .string()
     .trim()
     .min(20, 'Motivacija mora imati najmanje 20 karaktera.')
-    .max(1000, 'Motivacija moze imati najvise 1000 karaktera.'),
+    .max(1000, 'Motivacija može imati najviše 1000 karaktera.'),
 })
 
 type OrganizerRequestFormValues = z.infer<typeof organizerRequestSchema>
@@ -117,8 +117,8 @@ export function ParticipantOrganizerRequestPanel() {
             Organizer rola
           </Typography>
           <Typography color="text.secondary">
-            Ucesnici mogu da zatraze Organizer privilegije za kreiranje i
-            upravljanje dogadjajima.
+            Učesnici mogu da zatraže Organizer privilegije za kreiranje i
+            upravljanje događajima.
           </Typography>
         </Stack>
 
@@ -126,12 +126,12 @@ export function ParticipantOrganizerRequestPanel() {
 
         {isOrganizer && (
           <Alert severity="success">
-            Vas nalog vec ima Organizer privilegije.
+            Vaš nalog već ima Organizer privilegije.
           </Alert>
         )}
 
         {!isOrganizer && isLoading && (
-          <Typography color="text.secondary">Ucitavanje zahteva...</Typography>
+          <Typography color="text.secondary">Učitavanje zahteva...</Typography>
         )}
 
         {!isOrganizer && request && (
@@ -176,7 +176,7 @@ export function ParticipantOrganizerRequestPanel() {
                 error={Boolean(errors.motivation)}
                 helperText={
                   errors.motivation?.message ??
-                  'Objasnite zasto zelite da organizujete dogadjaje.'
+                  'Objasnite zašto želite da organizujete događaje.'
                 }
               />
               <Box>
@@ -185,7 +185,7 @@ export function ParticipantOrganizerRequestPanel() {
                   variant="contained"
                   loading={isSubmitting || submitMutation.isPending}
                 >
-                  Posalji zahtev
+                  Pošalji zahtev
                 </Button>
               </Box>
             </Stack>

@@ -8,59 +8,59 @@ import {
   Divider,
   Stack,
   Typography,
-} from '@mui/material'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError } from '../../api/ApiError'
-import { StatusChip } from '../../shared/components/StatusChip'
-import { formatDateTime } from '../../shared/format/dateTime'
-import { useAuthenticatedRequest } from '../auth/useAuthenticatedRequest'
-import { useAuth } from '../auth/useAuth'
-import { getUserById, reactivateUser, suspendUser } from './usersApi'
-import type { UserSummary } from './types'
+} from "@mui/material";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "../../api/ApiError";
+import { StatusChip } from "../../shared/components/StatusChip";
+import { formatDateTime } from "../../shared/format/dateTime";
+import { useAuthenticatedRequest } from "../auth/useAuthenticatedRequest";
+import { useAuth } from "../auth/useAuth";
+import { getUserById, reactivateUser, suspendUser } from "./usersApi";
+import type { UserSummary } from "./types";
 
 interface UserDetailsDialogProps {
-  user: UserSummary | null
-  onClose: () => void
+  user: UserSummary | null;
+  onClose: () => void;
 }
 
 function getErrorMessage(error: unknown) {
   return error instanceof ApiError
     ? error.message
-    : 'Akcija trenutno nije uspela.'
+    : "Akcija trenutno nije uspela.";
 }
 
 export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
-  const { session } = useAuth()
-  const authenticatedRequest = useAuthenticatedRequest()
-  const queryClient = useQueryClient()
-  const userId = user?.id
+  const { session } = useAuth();
+  const authenticatedRequest = useAuthenticatedRequest();
+  const queryClient = useQueryClient();
+  const userId = user?.id;
 
   const {
     data: details,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['admin-users', 'details', userId],
-    queryFn: () => getUserById(authenticatedRequest, userId ?? ''),
+    queryKey: ["admin-users", "details", userId],
+    queryFn: () => getUserById(authenticatedRequest, userId ?? ""),
     enabled: Boolean(session?.accessToken && userId),
-  })
+  });
 
   const suspendMutation = useMutation({
-    mutationFn: () => suspendUser(authenticatedRequest, userId ?? ''),
+    mutationFn: () => suspendUser(authenticatedRequest, userId ?? ""),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
-  })
+  });
 
   const reactivateMutation = useMutation({
-    mutationFn: () => reactivateUser(authenticatedRequest, userId ?? ''),
+    mutationFn: () => reactivateUser(authenticatedRequest, userId ?? ""),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
-  })
+  });
 
   const actionError =
-    suspendMutation.error ?? reactivateMutation.error ?? error ?? null
+    suspendMutation.error ?? reactivateMutation.error ?? error ?? null;
 
   return (
     <Dialog open={user !== null} onClose={onClose} fullWidth maxWidth="sm">
@@ -72,7 +72,9 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
           )}
 
           {isLoading && (
-            <Typography color="text.secondary">Ucitavanje korisnika...</Typography>
+            <Typography color="text.secondary">
+              Učitavanje korisnika...
+            </Typography>
           )}
 
           {details && (
@@ -80,7 +82,7 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
               <Stack spacing={1}>
                 <Typography variant="h6">{details.fullName}</Typography>
                 <Typography color="text.secondary">{details.email}</Typography>
-                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
                   <StatusChip status={details.status} />
                   {details.roles.map((role) => (
                     <StatusChip key={role} status={role} />
@@ -98,7 +100,7 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
                   Verifikovan: {formatDateTime(details.verifiedAtUtc)}
                 </Typography>
                 <Typography>
-                  Broj kreiranih dogadjaja: {details.createdEventCount}
+                  Broj kreiranih događaja: {details.createdEventCount}
                 </Typography>
               </Stack>
             </>
@@ -107,7 +109,7 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Zatvori</Button>
-        {details?.status === 'Active' && (
+        {details?.status === "Active" && (
           <Button
             color="warning"
             variant="outlined"
@@ -117,7 +119,7 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
             Suspenduj
           </Button>
         )}
-        {details?.status === 'Suspended' && (
+        {details?.status === "Suspended" && (
           <Button
             color="success"
             variant="contained"
@@ -129,5 +131,5 @@ export function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
         )}
       </DialogActions>
     </Dialog>
-  )
+  );
 }

@@ -114,7 +114,7 @@ export function LoginPage() {
               startIcon={<ArrowBackRoundedIcon />}
               sx={{ alignSelf: 'flex-start' }}
             >
-              Nazad na pocetnu
+              Nazad na početnu
             </Button>
           </Stack>
         </Stack>
