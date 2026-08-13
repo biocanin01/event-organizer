@@ -1,8 +1,8 @@
-import AddRoundedIcon from '@mui/icons-material/AddRounded'
-import CancelRoundedIcon from '@mui/icons-material/CancelRounded'
-import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
-import EditRoundedIcon from '@mui/icons-material/EditRounded'
-import PublishRoundedIcon from '@mui/icons-material/PublishRounded'
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import PublishRoundedIcon from "@mui/icons-material/PublishRounded";
 import {
   Alert,
   Button,
@@ -15,15 +15,16 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { ApiError } from '../../api/ApiError'
-import { StatusChip } from '../../shared/components/StatusChip'
-import { formatDateTime } from '../../shared/format/dateTime'
-import { applicationRoles } from '../auth/types'
-import { useAuthenticatedRequest } from '../auth/useAuthenticatedRequest'
-import { useAuth } from '../auth/useAuth'
+} from "@mui/material";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { ApiError } from "../../api/ApiError";
+import { StatusChip } from "../../shared/components/StatusChip";
+import { formatDateTime } from "../../shared/format/dateTime";
+import { formatMoney } from "../../shared/format/money";
+import { applicationRoles } from "../auth/types";
+import { useAuthenticatedRequest } from "../auth/useAuthenticatedRequest";
+import { useAuth } from "../auth/useAuth";
 import {
   cancelEvent,
   completeEvent,
@@ -32,46 +33,38 @@ import {
   listPublishedEvents,
   publishEvent,
   updateEvent,
-} from './eventsApi'
-import { EventFormDialog } from './EventFormDialog'
-import type { EventFormValues, EventItem } from './types'
+} from "./eventsApi";
+import { EventFormDialog } from "./EventFormDialog";
+import type { EventFormValues, EventItem } from "./types";
 
 function getErrorMessage(error: unknown) {
   return error instanceof ApiError
     ? error.message
-    : 'Akcija trenutno nije uspela.'
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('sr-RS', {
-    style: 'currency',
-    currency: 'RSD',
-    maximumFractionDigits: 0,
-  }).format(value)
+    : "Akcija trenutno nije uspela.";
 }
 
 function hasEnded(eventItem: EventItem) {
-  return new Date(eventItem.endsAtUtc) <= new Date()
+  return new Date(eventItem.endsAtUtc) <= new Date();
 }
 
 export function EventsPage() {
-  const { session } = useAuth()
-  const authenticatedRequest = useAuthenticatedRequest()
-  const queryClient = useQueryClient()
-  const [error, setError] = useState<string | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [eventToEdit, setEventToEdit] = useState<EventItem | null>(null)
+  const { session } = useAuth();
+  const authenticatedRequest = useAuthenticatedRequest();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<EventItem | null>(null);
 
   const isManager = Boolean(
     session?.user.roles.some(
       (role) =>
         role === applicationRoles.organizer || role === applicationRoles.admin,
     ),
-  )
+  );
   const eventsQueryKey = useMemo(
-    () => ['events', isManager ? 'manage' : 'published'],
+    () => ["events", isManager ? "manage" : "published"],
     [isManager],
-  )
+  );
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: eventsQueryKey,
@@ -80,80 +73,80 @@ export function EventsPage() {
         ? listManageableEvents(authenticatedRequest)
         : listPublishedEvents(authenticatedRequest),
     enabled: Boolean(session?.accessToken),
-  })
+  });
 
   const refreshEvents = async () => {
-    await queryClient.invalidateQueries({ queryKey: eventsQueryKey })
-  }
+    await queryClient.invalidateQueries({ queryKey: eventsQueryKey });
+  };
 
   const createMutation = useMutation({
     mutationFn: (values: EventFormValues) =>
       createEvent(authenticatedRequest, values),
     onSuccess: async () => {
-      setError(null)
-      setFormOpen(false)
-      await refreshEvents()
+      setError(null);
+      setFormOpen(false);
+      await refreshEvents();
     },
     onError: (mutationError) => setError(getErrorMessage(mutationError)),
-  })
+  });
 
   const updateMutation = useMutation({
     mutationFn: (values: EventFormValues) => {
       if (!eventToEdit) {
-        throw new Error('Događaj nije izabran.')
+        throw new Error("Događaj nije izabran.");
       }
 
-      return updateEvent(authenticatedRequest, eventToEdit.id, values)
+      return updateEvent(authenticatedRequest, eventToEdit.id, values);
     },
     onSuccess: async () => {
-      setError(null)
-      setEventToEdit(null)
-      setFormOpen(false)
-      await refreshEvents()
+      setError(null);
+      setEventToEdit(null);
+      setFormOpen(false);
+      await refreshEvents();
     },
     onError: (mutationError) => setError(getErrorMessage(mutationError)),
-  })
+  });
 
   const actionMutation = useMutation({
     mutationFn: async ({
       eventItem,
       action,
     }: {
-      eventItem: EventItem
-      action: 'publish' | 'cancel' | 'complete'
+      eventItem: EventItem;
+      action: "publish" | "cancel" | "complete";
     }) => {
-      if (action === 'publish') {
-        await publishEvent(authenticatedRequest, eventItem.id)
-      } else if (action === 'cancel') {
-        await cancelEvent(authenticatedRequest, eventItem.id)
+      if (action === "publish") {
+        await publishEvent(authenticatedRequest, eventItem.id);
+      } else if (action === "cancel") {
+        await cancelEvent(authenticatedRequest, eventItem.id);
       } else {
-        await completeEvent(authenticatedRequest, eventItem.id)
+        await completeEvent(authenticatedRequest, eventItem.id);
       }
     },
     onSuccess: async () => {
-      setError(null)
-      await refreshEvents()
+      setError(null);
+      await refreshEvents();
     },
     onError: (mutationError) => setError(getErrorMessage(mutationError)),
-  })
+  });
 
   const handleFormSubmit = (values: EventFormValues) => {
     if (eventToEdit) {
-      updateMutation.mutate(values)
-      return
+      updateMutation.mutate(values);
+      return;
     }
 
-    createMutation.mutate(values)
-  }
+    createMutation.mutate(values);
+  };
 
-  const isFormSubmitting = createMutation.isPending || updateMutation.isPending
+  const isFormSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Stack spacing={3}>
       <Stack
-        direction={{ xs: 'column', md: 'row' }}
+        direction={{ xs: "column", md: "row" }}
         spacing={2}
-        sx={{ justifyContent: 'space-between' }}
+        sx={{ justifyContent: "space-between" }}
       >
         <Stack spacing={0.75}>
           <Typography component="h1" variant="h4">
@@ -161,8 +154,8 @@ export function EventsPage() {
           </Typography>
           <Typography color="text.secondary">
             {isManager
-              ? 'Pregled i upravljanje događajima kroz lifecycle.'
-              : 'Pregled objavljenih događaja dostupnih učesnicima.'}
+              ? "Pregled i upravljanje događajima kroz lifecycle."
+              : "Pregled objavljenih događaja dostupnih učesnicima."}
           </Typography>
         </Stack>
         {isManager && (
@@ -170,8 +163,8 @@ export function EventsPage() {
             variant="contained"
             startIcon={<AddRoundedIcon />}
             onClick={() => {
-              setEventToEdit(null)
-              setFormOpen(true)
+              setEventToEdit(null);
+              setFormOpen(true);
             }}
           >
             Novi događaj
@@ -204,8 +197,8 @@ export function EventsPage() {
               <TableRow>
                 <TableCell colSpan={isManager ? 5 : 4}>
                   {isManager
-                    ? 'Nema događaja za upravljanje.'
-                    : 'Trenutno nema objavljenih događaja.'}
+                    ? "Nema događaja za upravljanje."
+                    : "Trenutno nema objavljenih događaja."}
                 </TableCell>
               </TableRow>
             )}
@@ -234,11 +227,12 @@ export function EventsPage() {
                 <TableCell>
                   <Stack spacing={0.25}>
                     <Typography variant="body2">
-                      {eventItem.capacity} mesta · {formatMoney(eventItem.budget)}
+                      {eventItem.capacity} mesta ·{" "}
+                      {formatMoney(eventItem.budget)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {eventItem.requiredSpeakerCount} predavača
-                      {eventItem.requiresEquipment ? ' · oprema' : ''}
+                      {eventItem.requiresEquipment ? " · oprema" : ""}
                     </Typography>
                   </Stack>
                 </TableCell>
@@ -250,16 +244,16 @@ export function EventsPage() {
                     <Stack
                       direction="row"
                       spacing={1}
-                      sx={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}
+                      sx={{ justifyContent: "flex-end", flexWrap: "wrap" }}
                     >
-                      {eventItem.status === 'Draft' && (
+                      {eventItem.status === "Draft" && (
                         <>
                           <Button
                             size="small"
                             startIcon={<EditRoundedIcon />}
                             onClick={() => {
-                              setEventToEdit(eventItem)
-                              setFormOpen(true)
+                              setEventToEdit(eventItem);
+                              setFormOpen(true);
                             }}
                           >
                             Izmeni
@@ -272,7 +266,7 @@ export function EventsPage() {
                             onClick={() =>
                               actionMutation.mutate({
                                 eventItem,
-                                action: 'publish',
+                                action: "publish",
                               })
                             }
                           >
@@ -280,23 +274,24 @@ export function EventsPage() {
                           </Button>
                         </>
                       )}
-                      {eventItem.status === 'Published' && hasEnded(eventItem) && (
-                        <Button
-                          size="small"
-                          startIcon={<CheckCircleRoundedIcon />}
-                          loading={actionMutation.isPending}
-                          onClick={() =>
-                            actionMutation.mutate({
-                              eventItem,
-                              action: 'complete',
-                            })
-                          }
-                        >
-                          Završi
-                        </Button>
-                      )}
-                      {eventItem.status !== 'Cancelled' &&
-                        eventItem.status !== 'Completed' && (
+                      {eventItem.status === "Published" &&
+                        hasEnded(eventItem) && (
+                          <Button
+                            size="small"
+                            startIcon={<CheckCircleRoundedIcon />}
+                            loading={actionMutation.isPending}
+                            onClick={() =>
+                              actionMutation.mutate({
+                                eventItem,
+                                action: "complete",
+                              })
+                            }
+                          >
+                            Završi
+                          </Button>
+                        )}
+                      {eventItem.status !== "Cancelled" &&
+                        eventItem.status !== "Completed" && (
                           <Button
                             size="small"
                             color="error"
@@ -305,7 +300,7 @@ export function EventsPage() {
                             onClick={() =>
                               actionMutation.mutate({
                                 eventItem,
-                                action: 'cancel',
+                                action: "cancel",
                               })
                             }
                           >
@@ -327,12 +322,12 @@ export function EventsPage() {
         isSubmitting={isFormSubmitting}
         onClose={() => {
           if (!isFormSubmitting) {
-            setFormOpen(false)
-            setEventToEdit(null)
+            setFormOpen(false);
+            setEventToEdit(null);
           }
         }}
         onSubmit={handleFormSubmit}
       />
     </Stack>
-  )
+  );
 }

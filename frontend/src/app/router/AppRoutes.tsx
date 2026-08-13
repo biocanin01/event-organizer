@@ -11,6 +11,7 @@ import { LoginPage } from '../../pages/LoginPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
 import { PlaceholderSectionPage } from '../../pages/PlaceholderSectionPage'
 import { RegisterPage } from '../../pages/RegisterPage'
+import { ResourcesPage } from '../../features/resources/ResourcesPage'
 import { AppShell } from '../layout/AppShell'
 
 export function AppRoutes() {
@@ -49,12 +50,7 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route
             path="resources"
-            element={
-              <PlaceholderSectionPage
-                title="Resursi"
-                description="Pregled resursa i priprema za objedinjeno planiranje rezervacija."
-              />
-            }
+            element={<ResourcesPage />}
           />
           <Route
             path="reports"

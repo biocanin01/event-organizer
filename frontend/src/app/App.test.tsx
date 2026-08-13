@@ -547,6 +547,328 @@ describe('App', () => {
     )
   })
 
+  it('loads resources for an organizer without admin actions', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'venue-id',
+              name: 'Main Hall',
+              description: 'Large venue.',
+              type: 'Venue',
+              status: 'Available',
+              cost: 500,
+              qualityScore: 4,
+              version: 1,
+              capacity: 120,
+              expertiseArea: null,
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/resources')
+
+    renderApplication()
+
+    expect(await screen.findByText('Main Hall')).toBeInTheDocument()
+    expect(screen.getByText('Sala')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Novi resurs' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Izmeni' })).not.toBeInTheDocument()
+  })
+
+  it('loads resources for an admin and shows management actions', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'package-id',
+              name: 'Conference Package',
+              description: 'Audio and projection.',
+              type: 'EquipmentPackage',
+              status: 'Available',
+              cost: 300,
+              qualityScore: 5,
+              version: 1,
+              capacity: null,
+              expertiseArea: null,
+              providerName: 'AV Provider',
+              supportedCapacity: 150,
+              serviceArea: 'IT',
+              includesTechnicalSupport: true,
+              contentsSummary: 'Projector, microphones and mixer.',
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/resources/package-id/archive' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(
+            {
+              status: 409,
+              title: 'Resource is used by an active booking.',
+              errors: [],
+            },
+            409,
+          ),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/resources')
+
+    renderApplication()
+
+    expect(await screen.findByText('Conference Package')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Novi resurs' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Izmeni' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Arhiviraj' }))
+
+    expect(
+      await screen.findByText('Resource is used by an active booking.'),
+    ).toBeInTheDocument()
+  })
+
+  it('updates a resource with the expected payload', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/resources/venue-id' && init?.method === 'PUT') {
+        return Promise.resolve(new Response(undefined, { status: 204 }))
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'venue-id',
+              name: 'Main Hall',
+              description: 'Large venue.',
+              type: 'Venue',
+              status: 'Available',
+              cost: 500,
+              qualityScore: 4,
+              version: 1,
+              capacity: 120,
+              expertiseArea: null,
+              providerName: null,
+              supportedCapacity: null,
+              serviceArea: null,
+              includesTechnicalSupport: null,
+              contentsSummary: null,
+              createdAtUtc: '2026-08-01T10:00:00Z',
+              updatedAtUtc: null,
+            },
+          ]),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/resources')
+
+    renderApplication()
+
+    expect(await screen.findByText('Main Hall')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Izmeni' }))
+    await userEvent.clear(screen.getByLabelText('Naziv'))
+    await userEvent.type(screen.getByLabelText('Naziv'), 'Updated Hall')
+    await userEvent.clear(screen.getByLabelText('Kapacitet'))
+    await userEvent.type(screen.getByLabelText('Kapacitet'), '140')
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/resources/venue-id`,
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('"type":"Venue"'),
+        }),
+      ),
+    )
+  })
+
+  it('creates a venue resource with the expected payload', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/resources' && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse({ id: 'venue-id' }, 201))
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/resources')
+
+    renderApplication()
+
+    await screen.findByRole('button', { name: 'Novi resurs' })
+    await userEvent.click(screen.getByRole('button', { name: 'Novi resurs' }))
+    await userEvent.type(screen.getByLabelText('Naziv'), 'Main Hall')
+    await userEvent.type(screen.getByLabelText('Opis'), 'Large venue.')
+    await userEvent.clear(screen.getByLabelText('Cena'))
+    await userEvent.type(screen.getByLabelText('Cena'), '500')
+    await userEvent.clear(screen.getByLabelText('Ocena kvaliteta'))
+    await userEvent.type(screen.getByLabelText('Ocena kvaliteta'), '4')
+    await userEvent.type(screen.getByLabelText('Kapacitet'), '120')
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/resources`,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"type":"Venue"'),
+        }),
+      ),
+    )
+  })
+
+  it('creates a speaker resource with the expected payload', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/resources' && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse({ id: 'speaker-id' }, 201))
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/resources')
+
+    renderApplication()
+
+    await screen.findByRole('button', { name: 'Novi resurs' })
+    await userEvent.click(screen.getByRole('button', { name: 'Novi resurs' }))
+    await userEvent.click(screen.getByRole('combobox', { name: 'Tip' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Predavač' }))
+    await userEvent.type(screen.getByLabelText('Naziv'), 'Architecture Lecturer')
+    await userEvent.type(screen.getByLabelText('Opis'), 'Domain expert.')
+    await userEvent.type(screen.getByLabelText('Oblast ekspertize'), 'IT')
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/resources`,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"type":"Speaker"'),
+        }),
+      ),
+    )
+  })
+
+  it('creates an equipment package resource with the expected payload', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/resources' && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse({ id: 'package-id' }, 201))
+      }
+
+      if (path === '/resources') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/resources')
+
+    renderApplication()
+
+    await screen.findByRole('button', { name: 'Novi resurs' })
+    await userEvent.click(screen.getByRole('button', { name: 'Novi resurs' }))
+    await userEvent.click(screen.getByRole('combobox', { name: 'Tip' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Paket opreme' }))
+    await userEvent.type(screen.getByLabelText('Naziv'), 'Conference Package')
+    await userEvent.type(screen.getByLabelText('Opis'), 'Audio and projection.')
+    await userEvent.type(screen.getByLabelText('Dobavljač'), 'AV Provider')
+    await userEvent.type(screen.getByLabelText('Podržani kapacitet'), '150')
+    await userEvent.type(screen.getByLabelText('Service area'), 'IT')
+    await userEvent.click(screen.getByLabelText('Uključuje tehničku podršku'))
+    await userEvent.type(
+      screen.getByLabelText('Sadržaj paketa'),
+      'Projector, microphones and mixer.',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/resources`,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"type":"EquipmentPackage"'),
+        }),
+      ),
+    )
+  })
+
   it('shows backend conflict errors when publishing is blocked', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(input.toString())
