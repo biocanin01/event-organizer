@@ -41,6 +41,15 @@ export interface EventBookingVersionRequest {
   version: number
 }
 
+export interface RejectEventBookingRequest {
+  version: number
+  reason: string | null
+}
+
+export interface ExpireEventBookingsResponse {
+  expiredCount: number
+}
+
 export interface RecommendedResource {
   id: string
   name: string

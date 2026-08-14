@@ -1,5 +1,6 @@
 import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded'
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded'
+import FactCheckRoundedIcon from '@mui/icons-material/FactCheckRounded'
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
 import EventNoteRoundedIcon from '@mui/icons-material/EventNoteRounded'
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded'
@@ -87,6 +88,12 @@ const navigationItems: NavigationItem[] = [
     label: 'Zahtevi za organizatore',
     path: '/admin/organizer-requests',
     icon: <AdminPanelSettingsRoundedIcon />,
+    roles: [applicationRoles.admin],
+  },
+  {
+    label: 'Booking zahtevi',
+    path: '/admin/bookings',
+    icon: <FactCheckRoundedIcon />,
     roles: [applicationRoles.admin],
   },
   {

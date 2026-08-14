@@ -1539,6 +1539,475 @@ describe('App', () => {
     )
   })
 
+  it('redirects organizers away from admin booking approvals', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/bookings')
+
+    renderApplication()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument()
+  })
+
+  it('loads admin booking approvals and shows booking details', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/bookings?status=Submitted') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'booking-id',
+              eventId: 'event-id',
+              status: 'Submitted',
+              version: 7,
+              submittedAtUtc: '2026-08-01T10:00:00Z',
+              holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+              decisionReason: null,
+              decidedAtUtc: null,
+              decidedByUserId: null,
+              totalCost: 1050,
+              venue: {
+                id: 'venue-id',
+                name: 'Main Hall',
+                type: 'Venue',
+                cost: 500,
+                qualityScore: 4,
+              },
+              speakers: [
+                {
+                  id: 'speaker-id',
+                  name: 'Architecture Lecturer',
+                  type: 'Speaker',
+                  cost: 250,
+                  qualityScore: 5,
+                },
+              ],
+              equipmentPackage: {
+                id: 'package-id',
+                name: 'Conference Package',
+                type: 'EquipmentPackage',
+                cost: 300,
+                qualityScore: 4,
+              },
+            },
+          ]),
+        )
+      }
+
+      if (path === '/bookings/booking-id') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'event-id',
+            status: 'Submitted',
+            version: 7,
+            submittedAtUtc: '2026-08-01T10:00:00Z',
+            holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+            decisionReason: null,
+            decidedAtUtc: null,
+            decidedByUserId: null,
+            totalCost: 1050,
+            venue: {
+              id: 'venue-id',
+              name: 'Main Hall',
+              type: 'Venue',
+              cost: 500,
+              qualityScore: 4,
+            },
+            speakers: [
+              {
+                id: 'speaker-id',
+                name: 'Architecture Lecturer',
+                type: 'Speaker',
+                cost: 250,
+                qualityScore: 5,
+              },
+            ],
+            equipmentPackage: {
+              id: 'package-id',
+              name: 'Conference Package',
+              type: 'EquipmentPackage',
+              cost: 300,
+              qualityScore: 4,
+            },
+          }),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/bookings')
+
+    renderApplication()
+
+    expect(await screen.findByRole('heading', { name: 'Booking zahtevi' })).toBeInTheDocument()
+    expect(await screen.findByText(/Main Hall/)).toBeInTheDocument()
+    expect(screen.getByText(/Conference Package/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Detalji' }))
+
+    expect(await screen.findByText('Detalji booking zahteva')).toBeInTheDocument()
+    expect(screen.getAllByText('Architecture Lecturer').length).toBeGreaterThan(0)
+  })
+
+  it('shows errors when admin bookings or booking details cannot be loaded', async () => {
+    let failBookingList = true
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/bookings?status=Submitted') {
+        if (failBookingList) {
+          return Promise.resolve(
+            jsonResponse({ status: 500, title: 'Booking zahtevi nisu dostupni.' }, 500),
+          )
+        }
+
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'booking-id',
+              eventId: 'event-id',
+              status: 'Submitted',
+              version: 7,
+              submittedAtUtc: '2026-08-01T10:00:00Z',
+              holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+              decisionReason: null,
+              decidedAtUtc: null,
+              decidedByUserId: null,
+              totalCost: 500,
+              venue: null,
+              speakers: [],
+              equipmentPackage: null,
+            },
+          ]),
+        )
+      }
+
+      if (path === '/bookings/booking-id') {
+        return Promise.resolve(
+          jsonResponse({ status: 500, title: 'Detalji nisu dostupni.' }, 500),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/bookings')
+
+    const view = renderApplication()
+
+    expect(
+      await screen.findByText(
+        'Booking zahtevi nisu dostupni.',
+        {},
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument()
+
+    view.unmount()
+    failBookingList = false
+    renderApplication()
+
+    await screen.findByText('booking-id')
+    await userEvent.click(screen.getByRole('button', { name: 'Detalji' }))
+    expect(
+      await screen.findByText(
+        'Detalji nisu dostupni.',
+        {},
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('approves submitted bookings with the current version', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/bookings?status=Submitted') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'booking-id',
+              eventId: 'event-id',
+              status: 'Submitted',
+              version: 8,
+              submittedAtUtc: '2026-08-01T10:00:00Z',
+              holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+              decisionReason: null,
+              decidedAtUtc: null,
+              decidedByUserId: null,
+              totalCost: 750,
+              venue: {
+                id: 'venue-id',
+                name: 'Main Hall',
+                type: 'Venue',
+                cost: 500,
+                qualityScore: 4,
+              },
+              speakers: [],
+              equipmentPackage: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/bookings/booking-id/approve' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'event-id',
+            status: 'Approved',
+            version: 9,
+            submittedAtUtc: '2026-08-01T10:00:00Z',
+            holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+            decisionReason: null,
+            decidedAtUtc: '2026-08-01T11:00:00Z',
+            decidedByUserId: 'admin-id',
+            totalCost: 750,
+            venue: null,
+            speakers: [],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/bookings')
+
+    renderApplication()
+
+    await screen.findByText(/Main Hall/)
+    await userEvent.click(screen.getByRole('button', { name: 'Odobri' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/bookings/booking-id/approve`,
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ version: 8 }),
+        }),
+      ),
+    )
+  })
+
+  it('rejects submitted bookings with reason and expires old holds', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/bookings?status=Submitted') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'booking-id',
+              eventId: 'event-id',
+              status: 'Submitted',
+              version: 10,
+              submittedAtUtc: '2026-08-01T10:00:00Z',
+              holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+              decisionReason: null,
+              decidedAtUtc: null,
+              decidedByUserId: null,
+              totalCost: 750,
+              venue: {
+                id: 'venue-id',
+                name: 'Main Hall',
+                type: 'Venue',
+                cost: 500,
+                qualityScore: 4,
+              },
+              speakers: [],
+              equipmentPackage: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/bookings/booking-id/reject' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'booking-id',
+            eventId: 'event-id',
+            status: 'Rejected',
+            version: 11,
+            submittedAtUtc: '2026-08-01T10:00:00Z',
+            holdExpiresAtUtc: null,
+            decisionReason: 'Resource unavailable.',
+            decidedAtUtc: '2026-08-01T11:00:00Z',
+            decidedByUserId: 'admin-id',
+            totalCost: 750,
+            venue: null,
+            speakers: [],
+            equipmentPackage: null,
+          }),
+        )
+      }
+
+      if (path === '/bookings/expire' && init?.method === 'PATCH') {
+        return Promise.resolve(jsonResponse({ expiredCount: 2 }))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/bookings')
+
+    renderApplication()
+
+    await screen.findByText(/Main Hall/)
+    await userEvent.click(screen.getByRole('button', { name: 'Odbij' }))
+    await userEvent.type(screen.getByLabelText('Razlog odbijanja'), 'Resource unavailable.')
+    await userEvent.click(screen.getByRole('button', { name: 'Odbij zahtev' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/bookings/booking-id/reject`,
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            version: 10,
+            reason: 'Resource unavailable.',
+          }),
+        }),
+      ),
+    )
+
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Odbij booking zahtev' }),
+      ).not.toBeInTheDocument(),
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Označi istekle' }))
+    expect(await screen.findByText('Isteklo booking zahteva: 2.')).toBeInTheDocument()
+  })
+
+  it('loads admin bookings by selected status and shows conflict errors', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input.toString())
+      const path = url.href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/bookings?status=Submitted') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'booking-id',
+              eventId: 'event-id',
+              status: 'Submitted',
+              version: 12,
+              submittedAtUtc: '2026-08-01T10:00:00Z',
+              holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+              decisionReason: null,
+              decidedAtUtc: null,
+              decidedByUserId: null,
+              totalCost: 750,
+              venue: null,
+              speakers: [],
+              equipmentPackage: null,
+            },
+          ]),
+        )
+      }
+
+      if (path === '/bookings?status=Approved') {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: 'approved-booking-id',
+              eventId: 'event-id',
+              status: 'Approved',
+              version: 13,
+              submittedAtUtc: '2026-08-01T10:00:00Z',
+              holdExpiresAtUtc: '2026-08-03T10:00:00Z',
+              decisionReason: null,
+              decidedAtUtc: '2026-08-01T11:00:00Z',
+              decidedByUserId: 'admin-id',
+              totalCost: 950,
+              venue: null,
+              speakers: [],
+              equipmentPackage: null,
+            },
+          ]),
+        )
+      }
+
+      if (
+        path === '/bookings/booking-id/approve' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(
+            {
+              status: 409,
+              title: 'Booking version is stale.',
+              errors: [],
+            },
+            409,
+          ),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/admin/bookings')
+
+    renderApplication()
+
+    await screen.findByText('booking-id')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Status' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Odobren' }))
+    expect(await screen.findByText('approved-booking-id')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Status' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Podnet' }))
+    await screen.findByText('booking-id')
+    await userEvent.click(screen.getByRole('button', { name: 'Odobri' }))
+    expect(await screen.findByText('Booking version is stale.')).toBeInTheDocument()
+  })
+
   it('shows backend conflict errors when publishing is blocked', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(input.toString())

@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { PublicOnlyRoute } from '../../features/auth/PublicOnlyRoute'
 import { RequireAuth } from '../../features/auth/RequireAuth'
 import { applicationRoles } from '../../features/auth/types'
+import { AdminBookingsPage } from '../../features/bookings/AdminBookingsPage'
 import { EventsPage } from '../../features/events/EventsPage'
 import { AdminOrganizerRequestsPage } from '../../features/organizerRequests/AdminOrganizerRequestsPage'
 import { AdminUsersPage } from '../../features/users/AdminUsersPage'
@@ -77,6 +78,10 @@ export function AppRoutes() {
           <Route
             path="admin/organizer-requests"
             element={<AdminOrganizerRequestsPage />}
+          />
+          <Route
+            path="admin/bookings"
+            element={<AdminBookingsPage />}
           />
         </Route>
       </Route>

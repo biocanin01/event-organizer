@@ -1,8 +1,11 @@
 import type { ApiRequestOptions } from '../../api/apiClient'
 import type {
+  EventResourceBookingStatus,
   EventBookingVersionRequest,
   EventRecommendation,
   EventResourceBooking,
+  ExpireEventBookingsResponse,
+  RejectEventBookingRequest,
   UpdateEventBookingDraftRequest,
 } from './types'
 
@@ -67,4 +70,48 @@ export async function getEventRecommendation(
   eventId: string,
 ): Promise<EventRecommendation> {
   return request<EventRecommendation>(`/events/${eventId}/recommendation`)
+}
+
+export async function listAdminBookings(
+  request: AuthenticatedRequest,
+  status: EventResourceBookingStatus,
+): Promise<EventResourceBooking[]> {
+  return request<EventResourceBooking[]>(`/bookings?status=${status}`)
+}
+
+export async function getAdminBookingById(
+  request: AuthenticatedRequest,
+  bookingId: string,
+): Promise<EventResourceBooking> {
+  return request<EventResourceBooking>(`/bookings/${bookingId}`)
+}
+
+export async function approveEventBooking(
+  request: AuthenticatedRequest,
+  bookingId: string,
+  payload: EventBookingVersionRequest,
+): Promise<EventResourceBooking> {
+  return request<EventResourceBooking>(`/bookings/${bookingId}/approve`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function rejectEventBooking(
+  request: AuthenticatedRequest,
+  bookingId: string,
+  payload: RejectEventBookingRequest,
+): Promise<EventResourceBooking> {
+  return request<EventResourceBooking>(`/bookings/${bookingId}/reject`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function expireEventBookings(
+  request: AuthenticatedRequest,
+): Promise<ExpireEventBookingsResponse> {
+  return request<ExpireEventBookingsResponse>('/bookings/expire', {
+    method: 'PATCH',
+  })
 }
