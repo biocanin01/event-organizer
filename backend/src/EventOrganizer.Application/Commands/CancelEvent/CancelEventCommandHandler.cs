@@ -3,6 +3,7 @@ using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Registrations;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -53,7 +54,28 @@ namespace EventOrganizer.Application.Commands.CancelEvent
                 booking.Cancel(now);
             }
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            var activeRegistrations = await _dbContext.Registrations
+                .Where(registration =>
+                    registration.EventId == request.EventId
+                    && (registration.Status == RegistrationStatus.Pending
+                        || registration.Status == RegistrationStatus.Confirmed))
+                .ToArrayAsync(cancellationToken);
+
+            foreach (var registration in activeRegistrations)
+            {
+                registration.Cancel(now);
+            }
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException exception)
+            {
+                throw new ConflictException(
+                    "The event or one of its registrations has changed. Refresh and try again.",
+                    exception);
+            }
         }
     }
 }

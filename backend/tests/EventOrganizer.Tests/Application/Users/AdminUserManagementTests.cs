@@ -197,6 +197,17 @@ namespace EventOrganizer.Tests.Application.Users
                         : null);
             }
 
+            public Task<IReadOnlyDictionary<Guid, UserSummaryResult>> FindUserSummariesByIdsAsync(
+                IReadOnlyCollection<Guid> userIds,
+                CancellationToken cancellationToken)
+            {
+                IReadOnlyDictionary<Guid, UserSummaryResult> users = Users
+                    .Where(pair => userIds.Contains(pair.Key))
+                    .ToDictionary();
+
+                return Task.FromResult(users);
+            }
+
             public Task UpdateUserStatusAsync(
                 Guid userId,
                 UserStatus status,

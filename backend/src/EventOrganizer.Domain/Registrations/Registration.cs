@@ -14,6 +14,7 @@ namespace EventOrganizer.Domain.Registrations
             EventId = eventId;
             ParticipantUserId = participantUserId;
             Status = RegistrationStatus.Pending;
+            Version = 1;
             CreatedAtUtc = createdAtUtc;
         }
 
@@ -24,6 +25,14 @@ namespace EventOrganizer.Domain.Registrations
         public Guid ParticipantUserId { get; private set; }
 
         public RegistrationStatus Status { get; private set; }
+
+        public string? RejectionReason { get; private set; }
+
+        public DateTime? DecidedAtUtc { get; private set; }
+
+        public Guid? DecidedByUserId { get; private set; }
+
+        public int Version { get; private set; }
 
         public DateTime CreatedAtUtc { get; private set; }
 
@@ -51,26 +60,53 @@ namespace EventOrganizer.Domain.Registrations
                 createdAtUtc);
         }
 
-        public void Confirm(DateTime updatedAtUtc)
+        public void Confirm(Guid decidedByUserId, DateTime updatedAtUtc)
         {
             if (Status != RegistrationStatus.Pending)
             {
                 throw new InvalidOperationException("Only pending registrations can be confirmed.");
             }
 
+            if (decidedByUserId == Guid.Empty)
+            {
+                throw new ArgumentException("Decision user id is required.", nameof(decidedByUserId));
+            }
+
             Status = RegistrationStatus.Confirmed;
+            DecidedAtUtc = updatedAtUtc;
+            DecidedByUserId = decidedByUserId;
             UpdatedAtUtc = updatedAtUtc;
+            Version++;
         }
 
-        public void Reject(DateTime updatedAtUtc)
+        public void Reject(string reason, Guid decidedByUserId, DateTime updatedAtUtc)
         {
             if (Status != RegistrationStatus.Pending)
             {
                 throw new InvalidOperationException("Only pending registrations can be rejected.");
             }
 
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                throw new ArgumentException("Rejection reason is required.", nameof(reason));
+            }
+
+            if (reason.Trim().Length > 500)
+            {
+                throw new ArgumentException("Rejection reason cannot exceed 500 characters.", nameof(reason));
+            }
+
+            if (decidedByUserId == Guid.Empty)
+            {
+                throw new ArgumentException("Decision user id is required.", nameof(decidedByUserId));
+            }
+
             Status = RegistrationStatus.Rejected;
+            RejectionReason = reason.Trim();
+            DecidedAtUtc = updatedAtUtc;
+            DecidedByUserId = decidedByUserId;
             UpdatedAtUtc = updatedAtUtc;
+            Version++;
         }
 
         public void Cancel(DateTime updatedAtUtc)
@@ -82,6 +118,7 @@ namespace EventOrganizer.Domain.Registrations
 
             Status = RegistrationStatus.Cancelled;
             UpdatedAtUtc = updatedAtUtc;
+            Version++;
         }
     }
 }

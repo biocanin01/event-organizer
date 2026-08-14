@@ -12,6 +12,10 @@ namespace EventOrganizer.Application.Common.Interfaces
             Guid userId,
             CancellationToken cancellationToken);
 
+        Task<IReadOnlyDictionary<Guid, UserSummaryResult>> FindUserSummariesByIdsAsync(
+            IReadOnlyCollection<Guid> userIds,
+            CancellationToken cancellationToken);
+
         Task UpdateUserStatusAsync(
             Guid userId,
             UserStatus status,

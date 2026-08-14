@@ -167,6 +167,26 @@ namespace EventOrganizer.Infrastructure.Identity
             return MapToUserSummary(user, roles.ToArray());
         }
 
+        public async Task<IReadOnlyDictionary<Guid, UserSummaryResult>> FindUserSummariesByIdsAsync(
+            IReadOnlyCollection<Guid> userIds,
+            CancellationToken cancellationToken)
+        {
+            var ids = userIds.Distinct().ToArray();
+            var users = await _userManager.Users
+                .AsNoTracking()
+                .Where(user => ids.Contains(user.Id))
+                .ToArrayAsync(cancellationToken);
+
+            var results = new Dictionary<Guid, UserSummaryResult>();
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                results[user.Id] = MapToUserSummary(user, roles.ToArray());
+            }
+
+            return results;
+        }
+
         public async Task UpdateUserStatusAsync(
             Guid userId,
             UserStatus status,

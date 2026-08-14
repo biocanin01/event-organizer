@@ -17,6 +17,7 @@ public sealed class RegistrationTests
         Assert.Equal(eventId, registration.EventId);
         Assert.Equal(participantUserId, registration.ParticipantUserId);
         Assert.Equal(RegistrationStatus.Pending, registration.Status);
+        Assert.Equal(1, registration.Version);
         Assert.Equal(createdAtUtc, registration.CreatedAtUtc);
     }
 
@@ -25,20 +26,52 @@ public sealed class RegistrationTests
     {
         var registration = CreateRegistration();
 
-        registration.Confirm(DateTime.UtcNow);
+        var adminUserId = Guid.NewGuid();
+        var decidedAtUtc = DateTime.UtcNow;
+
+        registration.Confirm(adminUserId, decidedAtUtc);
 
         Assert.Equal(RegistrationStatus.Confirmed, registration.Status);
+        Assert.Equal(adminUserId, registration.DecidedByUserId);
+        Assert.Equal(decidedAtUtc, registration.DecidedAtUtc);
+        Assert.Equal(2, registration.Version);
     }
 
     [Fact]
     public void Reject_WhenRegistrationIsConfirmed_Throws()
     {
         var registration = CreateRegistration();
-        registration.Confirm(DateTime.UtcNow);
+        registration.Confirm(Guid.NewGuid(), DateTime.UtcNow);
 
-        var act = () => registration.Reject(DateTime.UtcNow);
+        var act = () => registration.Reject("No capacity.", Guid.NewGuid(), DateTime.UtcNow);
 
         Assert.Throws<InvalidOperationException>(act);
+    }
+
+    [Fact]
+    public void Reject_WhenRegistrationIsPending_StoresDecision()
+    {
+        var registration = CreateRegistration();
+        var adminUserId = Guid.NewGuid();
+
+        registration.Reject(" Capacity reached. ", adminUserId, DateTime.UtcNow);
+
+        Assert.Equal(RegistrationStatus.Rejected, registration.Status);
+        Assert.Equal("Capacity reached.", registration.RejectionReason);
+        Assert.Equal(adminUserId, registration.DecidedByUserId);
+        Assert.Equal(2, registration.Version);
+    }
+
+    [Fact]
+    public void Cancel_WhenRegistrationIsConfirmed_CancelsAndIncrementsVersion()
+    {
+        var registration = CreateRegistration();
+        registration.Confirm(Guid.NewGuid(), DateTime.UtcNow);
+
+        registration.Cancel(DateTime.UtcNow);
+
+        Assert.Equal(RegistrationStatus.Cancelled, registration.Status);
+        Assert.Equal(3, registration.Version);
     }
 
     [Fact]

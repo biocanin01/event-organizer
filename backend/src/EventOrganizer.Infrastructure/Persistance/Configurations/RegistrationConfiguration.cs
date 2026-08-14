@@ -24,6 +24,14 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
             builder.Property(registration => registration.CreatedAtUtc)
                 .IsRequired();
 
+            builder.Property(registration => registration.RejectionReason)
+                .HasMaxLength(500);
+
+            builder.Property(registration => registration.Version)
+                .IsConcurrencyToken()
+                .HasDefaultValue(1)
+                .IsRequired();
+
             builder.HasOne<Event>()
                 .WithMany()
                 .HasForeignKey(registration => registration.EventId)
@@ -34,13 +42,19 @@ namespace EventOrganizer.Infrastructure.Persistance.Configurations
                 .HasForeignKey(registration => registration.ParticipantUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(registration => registration.DecidedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasIndex(registration => registration.EventId);
             builder.HasIndex(registration => registration.ParticipantUserId);
+            builder.HasIndex(registration => registration.Status);
             builder.HasIndex(registration => new
-                {
-                    registration.EventId,
-                    registration.ParticipantUserId,
-                })
+            {
+                registration.EventId,
+                registration.ParticipantUserId,
+            })
                 .IsUnique();
         }
     }

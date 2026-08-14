@@ -5,6 +5,7 @@ using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Registrations;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Tests.Application.Events
@@ -118,6 +119,32 @@ namespace EventOrganizer.Tests.Application.Events
                 handler.Handle(
                     new CancelEventCommand(eventItem.Id),
                     CancellationToken.None));
+        }
+
+        [Theory]
+        [InlineData(RegistrationStatus.Pending)]
+        [InlineData(RegistrationStatus.Confirmed)]
+        public async Task Handle_WhenEventHasActiveRegistrations_CancelsThem(
+            RegistrationStatus status)
+        {
+            var organizerUserId = await CreateOrganizerUserAsync();
+            var participantUserId = await CreateOrganizerUserAsync("registered-participant@example.com");
+            var eventItem = await CreateEventAsync(organizerUserId);
+            var registration = Registration.Create(eventItem.Id, participantUserId, DateTime.UtcNow);
+            if (status == RegistrationStatus.Confirmed)
+            {
+                registration.Confirm(organizerUserId, DateTime.UtcNow);
+            }
+
+            DbContext.Registrations.Add(registration);
+            await DbContext.SaveChangesAsync();
+            var handler = new CancelEventCommandHandler(
+                DbContext,
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+
+            await handler.Handle(new CancelEventCommand(eventItem.Id), CancellationToken.None);
+
+            Assert.Equal(RegistrationStatus.Cancelled, registration.Status);
         }
 
         [Fact]
