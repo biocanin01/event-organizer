@@ -3,6 +3,7 @@ using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Resources;
+using EventOrganizer.Domain.Reviews;
 using EventOrganizer.Domain.Users;
 using EventOrganizer.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -25,6 +26,8 @@ namespace EventOrganizer.Infrastructure.Persistance
         public DbSet<EventResourceBooking> EventResourceBookings => Set<EventResourceBooking>();
 
         public DbSet<Registration> Registrations => Set<Registration>();
+
+        public DbSet<Review> Reviews => Set<Review>();
 
         public DbSet<OrganizerRoleRequest> OrganizerRoleRequests => Set<OrganizerRoleRequest>();
 

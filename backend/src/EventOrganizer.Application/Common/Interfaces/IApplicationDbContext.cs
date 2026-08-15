@@ -2,6 +2,7 @@ using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Resources;
 using EventOrganizer.Domain.Registrations;
+using EventOrganizer.Domain.Reviews;
 using EventOrganizer.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -18,6 +19,8 @@ namespace EventOrganizer.Application.Common.Interfaces
         DbSet<EventResourceBooking> EventResourceBookings { get; }
 
         DbSet<Registration> Registrations { get; }
+
+        DbSet<Review> Reviews { get; }
 
         DbSet<OrganizerRoleRequest> OrganizerRoleRequests { get; }
 
