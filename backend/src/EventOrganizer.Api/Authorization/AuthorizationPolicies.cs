@@ -16,6 +16,8 @@ namespace EventOrganizer.Api.Authorization
 
         public const string CanManageBookings = "CanManageBookings";
 
+        public const string CanViewInsights = "CanViewInsights";
+
         public const string CanManageUsers = "CanManageUsers";
     }
 }

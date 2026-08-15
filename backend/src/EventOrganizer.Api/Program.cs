@@ -87,6 +87,12 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole(ApplicationRoles.Admin));
 
     options.AddPolicy(
+        AuthorizationPolicies.CanViewInsights,
+        policy => policy.RequireRole(
+            ApplicationRoles.Organizer,
+            ApplicationRoles.Admin));
+
+    options.AddPolicy(
         AuthorizationPolicies.CanManageUsers,
         policy => policy.RequireRole(ApplicationRoles.Admin));
 });
