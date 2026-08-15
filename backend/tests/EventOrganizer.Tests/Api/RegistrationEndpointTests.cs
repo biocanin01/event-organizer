@@ -35,6 +35,10 @@ namespace EventOrganizer.Tests.Api
             using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             Assert.Equal("Pending", payload.RootElement.GetProperty("status").GetString());
             Assert.Equal(1, payload.RootElement.GetProperty("version").GetInt32());
+            Assert.Equal("Published", payload.RootElement.GetProperty("eventStatus").GetString());
+            Assert.NotEqual(
+                default,
+                payload.RootElement.GetProperty("eventStartsAtUtc").GetDateTime());
         }
 
         [Fact]

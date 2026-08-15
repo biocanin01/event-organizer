@@ -14,10 +14,19 @@ namespace EventOrganizer.Application.Registrations
             CancellationToken cancellationToken)
         {
             var eventIds = registrations.Select(registration => registration.EventId).Distinct().ToArray();
-            var eventTitles = await dbContext.Events
+            var events = await dbContext.Events
                 .AsNoTracking()
                 .Where(eventItem => eventIds.Contains(eventItem.Id))
-                .ToDictionaryAsync(eventItem => eventItem.Id, eventItem => eventItem.Title, cancellationToken);
+                .ToDictionaryAsync(
+                    eventItem => eventItem.Id,
+                    eventItem => new
+                    {
+                        eventItem.Title,
+                        eventItem.StartsAtUtc,
+                        eventItem.EndsAtUtc,
+                        eventItem.Status,
+                    },
+                    cancellationToken);
             var users = await userManagementService.FindUserSummariesByIdsAsync(
                 registrations.Select(registration => registration.ParticipantUserId).Distinct().ToArray(),
                 cancellationToken);
@@ -25,10 +34,14 @@ namespace EventOrganizer.Application.Registrations
             return registrations.Select(registration =>
             {
                 users.TryGetValue(registration.ParticipantUserId, out var user);
+                events.TryGetValue(registration.EventId, out var eventItem);
                 return new RegistrationResponse(
                     registration.Id,
                     registration.EventId,
-                    eventTitles.GetValueOrDefault(registration.EventId, string.Empty),
+                    eventItem?.Title ?? string.Empty,
+                    eventItem?.StartsAtUtc ?? default,
+                    eventItem?.EndsAtUtc ?? default,
+                    eventItem?.Status.ToString() ?? string.Empty,
                     registration.ParticipantUserId,
                     user?.FullName ?? string.Empty,
                     user?.Email ?? string.Empty,

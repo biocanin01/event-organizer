@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Application.Responses;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Registrations;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,9 +21,13 @@ namespace EventOrganizer.Application.Queries.ListPublishedEvents
             ListPublishedEventsQuery request,
             CancellationToken cancellationToken)
         {
+            var now = DateTime.UtcNow;
+
             return await _dbContext.Events
                 .AsNoTracking()
-                .Where(eventItem => eventItem.Status == EventStatus.Published)
+                .Where(eventItem =>
+                    eventItem.Status == EventStatus.Published
+                    && eventItem.StartsAtUtc > now)
                 .OrderBy(eventItem => eventItem.StartsAtUtc)
                 .Select(eventItem => new EventResponse(
                     eventItem.Id,
@@ -31,6 +36,9 @@ namespace EventOrganizer.Application.Queries.ListPublishedEvents
                     eventItem.StartsAtUtc,
                     eventItem.EndsAtUtc,
                     eventItem.Capacity,
+                    _dbContext.Registrations.Count(registration =>
+                        registration.EventId == eventItem.Id
+                        && registration.Status == RegistrationStatus.Confirmed),
                     eventItem.Budget,
                     eventItem.Area,
                     eventItem.RequiredSpeakerCount,

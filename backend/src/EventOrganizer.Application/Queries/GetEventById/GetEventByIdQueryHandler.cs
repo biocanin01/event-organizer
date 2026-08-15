@@ -3,6 +3,7 @@ using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Application.Responses;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Registrations;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,6 +40,11 @@ namespace EventOrganizer.Application.Queries.GetEventById
 
             _eventAuthorizationService.EnsureCanManage(eventItem);
 
+            var confirmedRegistrationCount = await _dbContext.Registrations.CountAsync(
+                registration => registration.EventId == eventItem.Id
+                    && registration.Status == RegistrationStatus.Confirmed,
+                cancellationToken);
+
             return new EventResponse(
                 eventItem.Id,
                 eventItem.Title,
@@ -46,6 +52,7 @@ namespace EventOrganizer.Application.Queries.GetEventById
                 eventItem.StartsAtUtc,
                 eventItem.EndsAtUtc,
                 eventItem.Capacity,
+                confirmedRegistrationCount,
                 eventItem.Budget,
                 eventItem.Area,
                 eventItem.RequiredSpeakerCount,

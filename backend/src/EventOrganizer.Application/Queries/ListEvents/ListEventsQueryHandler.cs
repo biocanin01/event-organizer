@@ -2,6 +2,7 @@ using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Application.Responses;
+using EventOrganizer.Domain.Registrations;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,6 +57,9 @@ namespace EventOrganizer.Application.Queries.ListEvents
                     eventItem.StartsAtUtc,
                     eventItem.EndsAtUtc,
                     eventItem.Capacity,
+                    _dbContext.Registrations.Count(registration =>
+                        registration.EventId == eventItem.Id
+                        && registration.Status == RegistrationStatus.Confirmed),
                     eventItem.Budget,
                     eventItem.Area,
                     eventItem.RequiredSpeakerCount,

@@ -7,6 +7,7 @@
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
         int Capacity,
+        int ConfirmedRegistrationCount,
         decimal Budget,
         string Area,
         int RequiredSpeakerCount,
