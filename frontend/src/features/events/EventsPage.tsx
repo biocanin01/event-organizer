@@ -3,6 +3,7 @@ import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
+import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import PublishRoundedIcon from "@mui/icons-material/PublishRounded";
 import {
   Alert,
@@ -37,6 +38,7 @@ import {
   updateEvent,
 } from "./eventsApi";
 import { EventFormDialog } from "./EventFormDialog";
+import { PublicEventsTable } from "./PublicEventsTable";
 import type { EventFormValues, EventItem } from "./types";
 
 function getErrorMessage(error: unknown) {
@@ -68,7 +70,7 @@ export function EventsPage() {
     [isManager],
   );
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], error: eventsError, isLoading } = useQuery({
     queryKey: eventsQueryKey,
     queryFn: () =>
       isManager
@@ -143,6 +145,26 @@ export function EventsPage() {
 
   const isFormSubmitting = createMutation.isPending || updateMutation.isPending;
 
+  if (!isManager) {
+    return (
+      <Stack spacing={3}>
+        <Stack spacing={0.75}>
+          <Typography component="h1" variant="h4">
+            Događaji
+          </Typography>
+          <Typography color="text.secondary">
+            Pregled objavljenih događaja dostupnih učesnicima.
+          </Typography>
+        </Stack>
+        <PublicEventsTable
+          events={events}
+          errorMessage={eventsError ? getErrorMessage(eventsError) : null}
+          isLoading={isLoading}
+        />
+      </Stack>
+    );
+  }
+
   return (
     <Stack spacing={3}>
       <Stack
@@ -175,6 +197,9 @@ export function EventsPage() {
       </Stack>
 
       {error && <Alert severity="error">{error}</Alert>}
+      {eventsError && (
+        <Alert severity="error">{getErrorMessage(eventsError)}</Alert>
+      )}
 
       <TableContainer component={Paper} variant="outlined">
         <Table>
@@ -287,6 +312,18 @@ export function EventsPage() {
                             Planiranje
                           </Button>
                         )}
+                      {(eventItem.status === "Published" ||
+                        eventItem.status === "Completed" ||
+                        eventItem.status === "Cancelled") && (
+                        <Button
+                          component={Link}
+                          to={`/events/${eventItem.id}/registrations`}
+                          size="small"
+                          startIcon={<GroupsRoundedIcon />}
+                        >
+                          Učesnici
+                        </Button>
+                      )}
                       {eventItem.status === "Published" &&
                         hasEnded(eventItem) && (
                           <Button

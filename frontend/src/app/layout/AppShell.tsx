@@ -69,13 +69,12 @@ const navigationItems: NavigationItem[] = [
     roles: [applicationRoles.organizer, applicationRoles.admin],
   },
   {
-    label: 'Prijave i rezervacije',
+    label: 'Moje prijave',
     path: '/registrations',
     icon: <AssignmentTurnedInRoundedIcon />,
     roles: [
       applicationRoles.participant,
       applicationRoles.organizer,
-      applicationRoles.admin,
     ],
   },
   {

@@ -16,6 +16,13 @@ export async function listPublishedEvents(
   return request<EventItem[]>('/events')
 }
 
+export async function getPublishedEventById(
+  request: AuthenticatedRequest,
+  eventId: string,
+): Promise<EventItem> {
+  return request<EventItem>(`/events/${eventId}`)
+}
+
 export async function listManageableEvents(
   request: AuthenticatedRequest,
 ): Promise<EventItem[]> {

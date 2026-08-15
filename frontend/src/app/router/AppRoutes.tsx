@@ -4,6 +4,8 @@ import { RequireAuth } from '../../features/auth/RequireAuth'
 import { applicationRoles } from '../../features/auth/types'
 import { AdminBookingsPage } from '../../features/bookings/AdminBookingsPage'
 import { EventsPage } from '../../features/events/EventsPage'
+import { EventDiscoveryPage } from '../../features/events/EventDiscoveryPage'
+import { PublicEventDetailsPage } from '../../features/events/PublicEventDetailsPage'
 import { AdminOrganizerRequestsPage } from '../../features/organizerRequests/AdminOrganizerRequestsPage'
 import { AdminUsersPage } from '../../features/users/AdminUsersPage'
 import { DashboardPage } from '../../pages/DashboardPage'
@@ -14,12 +16,16 @@ import { PlaceholderSectionPage } from '../../pages/PlaceholderSectionPage'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { EventPlanningPage } from '../../features/planning/EventPlanningPage'
 import { ResourcesPage } from '../../features/resources/ResourcesPage'
+import { EventRegistrationsPage } from '../../features/registrations/EventRegistrationsPage'
+import { MyRegistrationsPage } from '../../features/registrations/MyRegistrationsPage'
 import { AppShell } from '../layout/AppShell'
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route index element={<HomePage />} />
+      <Route path="discover" element={<EventDiscoveryPage />} />
+      <Route path="discover/:eventId" element={<PublicEventDetailsPage />} />
       <Route element={<PublicOnlyRoute />}>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
@@ -31,15 +37,17 @@ export function AppRoutes() {
             path="events"
             element={<EventsPage />}
           />
-          <Route
-            path="registrations"
-            element={
-              <PlaceholderSectionPage
-                title="Prijave i rezervacije"
-                description="Pregled prijava učesnika i rezervacija povezanih sa događajima."
-              />
-            }
+        </Route>
+      </Route>
+      <Route
+        element={
+          <RequireAuth
+            roles={[applicationRoles.participant, applicationRoles.organizer]}
           />
+        }
+      >
+        <Route element={<AppShell />}>
+          <Route path="registrations" element={<MyRegistrationsPage />} />
         </Route>
       </Route>
       <Route
@@ -57,6 +65,10 @@ export function AppRoutes() {
           <Route
             path="events/:eventId/planning"
             element={<EventPlanningPage />}
+          />
+          <Route
+            path="events/:eventId/registrations"
+            element={<EventRegistrationsPage />}
           />
           <Route
             path="reports"

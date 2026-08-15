@@ -48,9 +48,14 @@ export function HomePage() {
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
             <BrandMark />
-            <Button component={Link} to="/login" variant="outlined">
-              Prijava
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button component={Link} to="/discover">
+                Događaji
+              </Button>
+              <Button component={Link} to="/login" variant="outlined">
+                Prijava
+              </Button>
+            </Stack>
           </Toolbar>
         </Container>
       </AppBar>
@@ -78,16 +83,20 @@ export function HomePage() {
               EventOrganizer povezuje događaje, učesnike i resurse u jedinstven
               i pregledan sistem.
             </Typography>
-            <Button
-              component={Link}
-              to="/login"
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForwardRoundedIcon />}
-              sx={{ alignSelf: "flex-start" }}
-            >
-              Započni
-            </Button>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <Button
+                component={Link}
+                to="/discover"
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardRoundedIcon />}
+              >
+                Pregledaj događaje
+              </Button>
+              <Button component={Link} to="/login" size="large">
+                Prijavi se
+              </Button>
+            </Stack>
           </Stack>
 
           <Box

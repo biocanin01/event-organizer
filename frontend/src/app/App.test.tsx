@@ -33,6 +33,49 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
+function createPublishedEvent(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'public-event-id',
+    title: 'Frontend konferencija',
+    description: 'Konferencija o modernom frontend razvoju.',
+    startsAtUtc: '2099-09-01T09:00:00Z',
+    endsAtUtc: '2099-09-01T13:00:00Z',
+    capacity: 100,
+    confirmedRegistrationCount: 25,
+    budget: 1000,
+    area: 'IT',
+    requiredSpeakerCount: 2,
+    requiresEquipment: true,
+    organizerUserId: 'organizer-id',
+    status: 'Published',
+    createdAtUtc: '2026-08-01T10:00:00Z',
+    updatedAtUtc: null,
+    ...overrides,
+  }
+}
+
+function createRegistration(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'registration-id',
+    eventId: 'public-event-id',
+    eventTitle: 'Frontend konferencija',
+    eventStartsAtUtc: '2099-09-01T09:00:00Z',
+    eventEndsAtUtc: '2099-09-01T13:00:00Z',
+    eventStatus: 'Published',
+    participantUserId: 'participant-id',
+    participantFullName: 'Participant User',
+    participantEmail: 'participant@example.com',
+    status: 'Pending',
+    rejectionReason: null,
+    decidedAtUtc: null,
+    decidedByUserId: null,
+    version: 1,
+    createdAtUtc: '2026-08-14T10:00:00Z',
+    updatedAtUtc: null,
+    ...overrides,
+  }
+}
+
 describe('App', () => {
   beforeEach(() => {
     window.history.pushState({}, '', '/')
@@ -2069,5 +2112,228 @@ describe('App', () => {
     expect(
       await screen.findByText('Event booking must be approved before publishing.'),
     ).toBeInTheDocument()
+  })
+
+  it('allows anonymous users to browse events and opens the public details page', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(new Response(undefined, { status: 401 }))
+      }
+
+      if (path === '/events') {
+        return Promise.resolve(jsonResponse([createPublishedEvent()]))
+      }
+
+      if (path === '/events/public-event-id') {
+        return Promise.resolve(jsonResponse(createPublishedEvent()))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/discover')
+
+    renderApplication()
+
+    expect(await screen.findByText('Frontend konferencija')).toBeInTheDocument()
+    expect(screen.getByText('75 od 100 slobodno')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Detalji' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Frontend konferencija' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Prijavi se na nalog' }),
+    ).toHaveAttribute('href', '/login')
+  })
+
+  it('registers a participant and displays the pending status', async () => {
+    let registration: ReturnType<typeof createRegistration> | null = null
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      if (path === '/events/public-event-id') {
+        return Promise.resolve(jsonResponse(createPublishedEvent()))
+      }
+
+      if (path === '/registrations/me') {
+        return Promise.resolve(jsonResponse(registration ? [registration] : []))
+      }
+
+      if (
+        path === '/events/public-event-id/registrations' &&
+        init?.method === 'POST'
+      ) {
+        registration = createRegistration()
+        return Promise.resolve(jsonResponse(registration, 201))
+      }
+
+      if (path === '/events') {
+        return Promise.resolve(jsonResponse([createPublishedEvent()]))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/discover/public-event-id')
+
+    renderApplication()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Prijavi se' }))
+
+    expect(await screen.findByText('Već imate prijavu za ovaj događaj.')).toBeInTheDocument()
+    expect(screen.getByText('Na čekanju')).toBeInTheDocument()
+  })
+
+  it('cancels a personal registration with its current version', async () => {
+    const registration = createRegistration({ version: 4 })
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      if (path === '/registrations/me') {
+        return Promise.resolve(jsonResponse([registration]))
+      }
+
+      if (
+        path === '/registrations/registration-id/cancel' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(createRegistration({ status: 'Cancelled', version: 5 })),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/registrations')
+
+    renderApplication()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Otkaži prijavu' }),
+    )
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/registrations/registration-id/cancel`,
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ version: 4 }),
+        }),
+      ),
+    )
+  })
+
+  it('allows an organizer to confirm a pending event registration', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Organizer'])))
+      }
+
+      if (path === '/events/manage/public-event-id') {
+        return Promise.resolve(jsonResponse(createPublishedEvent()))
+      }
+
+      if (path === '/events/public-event-id/registrations?status=Pending') {
+        return Promise.resolve(
+          jsonResponse([createRegistration({ version: 7 })]),
+        )
+      }
+
+      if (
+        path === '/registrations/registration-id/confirm' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(createRegistration({ status: 'Confirmed', version: 8 })),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events/public-event-id/registrations')
+
+    renderApplication()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Potvrdi' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/registrations/registration-id/confirm`,
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ version: 7 }),
+        }),
+      ),
+    )
+  })
+
+  it('rejects an event registration with a required reason', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/events/manage/public-event-id') {
+        return Promise.resolve(jsonResponse(createPublishedEvent()))
+      }
+
+      if (path === '/events/public-event-id/registrations?status=Pending') {
+        return Promise.resolve(
+          jsonResponse([createRegistration({ version: 9 })]),
+        )
+      }
+
+      if (
+        path === '/registrations/registration-id/reject' &&
+        init?.method === 'PATCH'
+      ) {
+        return Promise.resolve(
+          jsonResponse(createRegistration({ status: 'Rejected', version: 10 })),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/events/public-event-id/registrations')
+
+    renderApplication()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Odbij' }))
+    await userEvent.type(
+      screen.getByLabelText(/Razlog odbijanja/),
+      'Kapacitet je popunjen.',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Odbij prijavu' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/registrations/registration-id/reject`,
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            version: 9,
+            reason: 'Kapacitet je popunjen.',
+          }),
+        }),
+      ),
+    )
   })
 })

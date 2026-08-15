@@ -7,6 +7,7 @@ export interface EventItem {
   startsAtUtc: string
   endsAtUtc: string
   capacity: number
+  confirmedRegistrationCount: number
   budget: number
   area: string
   requiredSpeakerCount: number
