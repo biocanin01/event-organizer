@@ -12,12 +12,13 @@ import { DashboardPage } from '../../pages/DashboardPage'
 import { HomePage } from '../../pages/HomePage'
 import { LoginPage } from '../../pages/LoginPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
-import { PlaceholderSectionPage } from '../../pages/PlaceholderSectionPage'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { EventPlanningPage } from '../../features/planning/EventPlanningPage'
 import { ResourcesPage } from '../../features/resources/ResourcesPage'
 import { EventRegistrationsPage } from '../../features/registrations/EventRegistrationsPage'
 import { MyRegistrationsPage } from '../../features/registrations/MyRegistrationsPage'
+import { ManagedReviewsPage } from '../../features/reviews/ManagedReviewsPage'
+import { MyReviewsPage } from '../../features/reviews/MyReviewsPage'
 import { AppShell } from '../layout/AppShell'
 
 export function AppRoutes() {
@@ -48,6 +49,7 @@ export function AppRoutes() {
       >
         <Route element={<AppShell />}>
           <Route path="registrations" element={<MyRegistrationsPage />} />
+          <Route path="reviews" element={<MyReviewsPage />} />
         </Route>
       </Route>
       <Route
@@ -72,12 +74,7 @@ export function AppRoutes() {
           />
           <Route
             path="reports"
-            element={
-              <PlaceholderSectionPage
-                title="Izveštaji"
-                description="Pregled recenzija i osnovnih pokazatelja organizovanih događaja."
-              />
-            }
+            element={<ManagedReviewsPage />}
           />
         </Route>
       </Route>

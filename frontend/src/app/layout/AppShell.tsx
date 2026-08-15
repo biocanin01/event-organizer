@@ -78,6 +78,15 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'Moje recenzije',
+    path: '/reviews',
+    icon: <RateReviewRoundedIcon />,
+    roles: [
+      applicationRoles.participant,
+      applicationRoles.organizer,
+    ],
+  },
+  {
     label: 'Korisnici',
     path: '/admin/users',
     icon: <GroupRoundedIcon />,

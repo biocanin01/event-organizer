@@ -76,6 +76,22 @@ function createRegistration(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function createReview(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'review-id',
+    eventId: 'public-event-id',
+    eventTitle: 'Frontend konferencija',
+    participantUserId: 'participant-id',
+    participantName: 'Participant User',
+    rating: 5,
+    comment: 'Odličan događaj.',
+    version: 1,
+    createdAtUtc: '2026-08-15T10:00:00Z',
+    updatedAtUtc: null,
+    ...overrides,
+  }
+}
+
 describe('App', () => {
   beforeEach(() => {
     window.history.pushState({}, '', '/')
@@ -2130,6 +2146,10 @@ describe('App', () => {
         return Promise.resolve(jsonResponse(createPublishedEvent()))
       }
 
+      if (path === '/events/public-event-id/reviews') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
       return Promise.resolve(new Response(undefined, { status: 404 }))
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -2160,6 +2180,10 @@ describe('App', () => {
 
       if (path === '/events/public-event-id') {
         return Promise.resolve(jsonResponse(createPublishedEvent()))
+      }
+
+      if (path === '/events/public-event-id/reviews') {
+        return Promise.resolve(jsonResponse([]))
       }
 
       if (path === '/registrations/me') {
@@ -2335,5 +2359,159 @@ describe('App', () => {
         }),
       ),
     )
+  })
+
+  it('displays public reviews on the event details page', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(new Response(undefined, { status: 401 }))
+      }
+
+      if (path === '/events/public-event-id') {
+        return Promise.resolve(jsonResponse(createPublishedEvent()))
+      }
+
+      if (path === '/events/public-event-id/reviews') {
+        return Promise.resolve(jsonResponse([createReview()]))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/discover/public-event-id')
+
+    renderApplication()
+
+    expect(await screen.findByText('Recenzije')).toBeInTheDocument()
+    expect(await screen.findByText('Odličan događaj.')).toBeInTheDocument()
+  })
+
+  it('creates a review from completed personal registrations', async () => {
+    const registration = createRegistration({
+      status: 'Confirmed',
+      eventStatus: 'Completed',
+      eventStartsAtUtc: '2026-08-01T09:00:00Z',
+      eventEndsAtUtc: '2026-08-01T13:00:00Z',
+    })
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      if (path === '/registrations/me') {
+        return Promise.resolve(jsonResponse([registration]))
+      }
+
+      if (path === '/reviews/me') {
+        return Promise.resolve(jsonResponse([]))
+      }
+
+      if (
+        path === '/events/public-event-id/reviews' &&
+        init?.method === 'POST'
+      ) {
+        return Promise.resolve(jsonResponse(createReview(), 201))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/registrations')
+
+    renderApplication()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Oceni' }))
+    await userEvent.clear(screen.getByLabelText('Komentar'))
+    await userEvent.type(screen.getByLabelText('Komentar'), 'Odličan događaj.')
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/events/public-event-id/reviews`,
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            rating: 5,
+            comment: 'Odličan događaj.',
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('updates a personal review with its current version', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      if (path === '/reviews/me') {
+        return Promise.resolve(jsonResponse([createReview({ version: 3 })]))
+      }
+
+      if (path === '/reviews/review-id' && init?.method === 'PUT') {
+        return Promise.resolve(jsonResponse(createReview({ version: 4 })))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/reviews')
+
+    renderApplication()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Izmeni' }))
+    await userEvent.clear(screen.getByLabelText('Komentar'))
+    await userEvent.type(screen.getByLabelText('Komentar'), 'Ažuriran komentar.')
+    await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj' }))
+
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiBaseUrl}/reviews/review-id`,
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({
+            rating: 5,
+            comment: 'Ažuriran komentar.',
+            version: 3,
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('shows managed reviews on the reports page', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/events/manage') {
+        return Promise.resolve(jsonResponse([createPublishedEvent()]))
+      }
+
+      if (path === '/reviews/manage') {
+        return Promise.resolve(jsonResponse([createReview()]))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/reports')
+
+    renderApplication()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Izveštaji' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Odličan događaj.')).toBeInTheDocument()
   })
 })

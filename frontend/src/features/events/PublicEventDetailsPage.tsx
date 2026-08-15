@@ -23,6 +23,7 @@ import {
   createRegistration,
   listMyRegistrations,
 } from '../registrations/registrationsApi'
+import { EventReviewsPanel } from '../reviews/EventReviewsPanel'
 import { getPublishedEventById } from './eventsApi'
 import { getAvailableSpots } from './eventAvailability'
 import { PublicEventsHeader } from './PublicEventsHeader'
@@ -212,6 +213,14 @@ export function PublicEventDetailsPage() {
                 : 'Događaj trenutno nema slobodnih mesta.'}
             </Alert>
           )}
+
+          <EventReviewsPanel
+            eventId={event.id}
+            eventStatus={event.status}
+            currentUserId={session?.user.userId}
+            registration={existingRegistration}
+            canUseReviewActions={isParticipant}
+          />
         </Stack>
       </Container>
     </Box>
