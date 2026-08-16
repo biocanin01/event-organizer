@@ -2550,4 +2550,70 @@ describe('App', () => {
     expect(screen.getByText('50%')).toBeInTheDocument()
     expect(await screen.findByText('Odličan događaj.')).toBeInTheDocument()
   })
+
+  it('prevents participants from opening role-scoped reports', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Participant'])))
+      }
+
+      if (path === '/organizer-role-requests/me') {
+        return Promise.resolve(new Response(undefined, { status: 204 }))
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/reports')
+
+    renderApplication()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Izveštaji')).not.toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      `${apiBaseUrl}/insights/events`,
+      expect.anything(),
+    )
+  })
+
+  it('shows an API error when event insights cannot be loaded', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
+
+      if (path === '/auth/refresh') {
+        return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
+      }
+
+      if (path === '/insights/events') {
+        return Promise.resolve(
+          jsonResponse(
+            {
+              status: 500,
+              title: 'Izveštaji trenutno nisu dostupni.',
+              errors: [],
+            },
+            500,
+          ),
+        )
+      }
+
+      return Promise.resolve(new Response(undefined, { status: 404 }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.pushState({}, '', '/reports')
+
+    renderApplication()
+
+    expect(
+      await screen.findByText(
+        'Izveštaji trenutno nisu dostupni.',
+        {},
+        { timeout: 3_000 },
+      ),
+    ).toBeInTheDocument()
+  })
 })

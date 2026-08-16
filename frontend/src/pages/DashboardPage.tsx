@@ -12,14 +12,12 @@ export function DashboardPage() {
           Dashboard
         </Typography>
         <Typography color="text.secondary">
-          Dobrodošli, {session?.user.fullName}. Ovde će biti pregled aktivnosti
-          prema vasoj roli.
+            Dobrodošli, {session?.user.fullName}. Izaberite opciju iz navigacije da biste nastavili.
         </Typography>
       </Stack>
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography color="text.secondary">
-          Sledeći issue-i popunjavaju ove sekcije stvarnim podacima iz backend
-          modula.
+            U navigaciji možete pronaći događaje, prijave, recenzije i ostale dostupne opcije.
         </Typography>
       </Paper>
       <ParticipantOrganizerRequestPanel />
