@@ -6,6 +6,7 @@ import { AdminBookingsPage } from '../../features/bookings/AdminBookingsPage'
 import { EventsPage } from '../../features/events/EventsPage'
 import { EventDiscoveryPage } from '../../features/events/EventDiscoveryPage'
 import { PublicEventDetailsPage } from '../../features/events/PublicEventDetailsPage'
+import { InsightsDashboardPage } from '../../features/insights/InsightsDashboardPage'
 import { AdminOrganizerRequestsPage } from '../../features/organizerRequests/AdminOrganizerRequestsPage'
 import { AdminUsersPage } from '../../features/users/AdminUsersPage'
 import { DashboardPage } from '../../pages/DashboardPage'
@@ -17,7 +18,6 @@ import { EventPlanningPage } from '../../features/planning/EventPlanningPage'
 import { ResourcesPage } from '../../features/resources/ResourcesPage'
 import { EventRegistrationsPage } from '../../features/registrations/EventRegistrationsPage'
 import { MyRegistrationsPage } from '../../features/registrations/MyRegistrationsPage'
-import { ManagedReviewsPage } from '../../features/reviews/ManagedReviewsPage'
 import { MyReviewsPage } from '../../features/reviews/MyReviewsPage'
 import { AppShell } from '../layout/AppShell'
 
@@ -74,7 +74,7 @@ export function AppRoutes() {
           />
           <Route
             path="reports"
-            element={<ManagedReviewsPage />}
+            element={<InsightsDashboardPage />}
           />
         </Route>
       </Route>

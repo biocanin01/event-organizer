@@ -92,6 +92,40 @@ function createReview(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function createInsightSummary(overrides: Record<string, unknown> = {}) {
+  return {
+    eventId: 'public-event-id',
+    eventTitle: 'Frontend konferencija',
+    status: 'Completed',
+    startsAtUtc: '2026-08-01T09:00:00Z',
+    endsAtUtc: '2026-08-01T13:00:00Z',
+    capacity: 100,
+    pendingRegistrationCount: 2,
+    confirmedRegistrationCount: 50,
+    rejectedRegistrationCount: 3,
+    cancelledRegistrationCount: 4,
+    capacityFillPercentage: 50,
+    averageRating: 4.5,
+    reviewCount: 2,
+    ...overrides,
+  }
+}
+
+function createInsightDetails(overrides: Record<string, unknown> = {}) {
+  return {
+    ...createInsightSummary(),
+    ratingDistribution: [
+      { rating: 1, count: 0 },
+      { rating: 2, count: 0 },
+      { rating: 3, count: 0 },
+      { rating: 4, count: 1 },
+      { rating: 5, count: 1 },
+    ],
+    recentReviews: [createReview()],
+    ...overrides,
+  }
+}
+
 describe('App', () => {
   beforeEach(() => {
     window.history.pushState({}, '', '/')
@@ -2486,7 +2520,7 @@ describe('App', () => {
     )
   })
 
-  it('shows managed reviews on the reports page', async () => {
+  it('shows event insights on the reports page', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const path = new URL(input.toString()).href.replace(apiBaseUrl, '')
 
@@ -2494,12 +2528,12 @@ describe('App', () => {
         return Promise.resolve(jsonResponse(createAuthResponse(['Admin'])))
       }
 
-      if (path === '/events/manage') {
-        return Promise.resolve(jsonResponse([createPublishedEvent()]))
+      if (path === '/insights/events') {
+        return Promise.resolve(jsonResponse([createInsightSummary()]))
       }
 
-      if (path === '/reviews/manage') {
-        return Promise.resolve(jsonResponse([createReview()]))
+      if (path === '/insights/events/public-event-id') {
+        return Promise.resolve(jsonResponse(createInsightDetails()))
       }
 
       return Promise.resolve(new Response(undefined, { status: 404 }))
@@ -2512,6 +2546,8 @@ describe('App', () => {
     expect(
       await screen.findByRole('heading', { name: 'Izveštaji' }),
     ).toBeInTheDocument()
+    expect(await screen.findByText('50 potvrđeno')).toBeInTheDocument()
+    expect(screen.getByText('50%')).toBeInTheDocument()
     expect(await screen.findByText('Odličan događaj.')).toBeInTheDocument()
   })
 })
