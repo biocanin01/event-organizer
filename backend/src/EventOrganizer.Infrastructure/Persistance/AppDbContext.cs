@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Notifications;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Resources;
 using EventOrganizer.Domain.Reviews;
@@ -20,6 +21,8 @@ namespace EventOrganizer.Infrastructure.Persistance
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Event> Events => Set<Event>();
+
+        public DbSet<Notification> Notifications => Set<Notification>();
 
         public DbSet<Resource> Resources => Set<Resource>();
 

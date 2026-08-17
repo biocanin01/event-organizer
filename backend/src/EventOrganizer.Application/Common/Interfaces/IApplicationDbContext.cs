@@ -1,5 +1,6 @@
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Notifications;
 using EventOrganizer.Domain.Resources;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Reviews;
@@ -13,6 +14,8 @@ namespace EventOrganizer.Application.Common.Interfaces
     public interface IApplicationDbContext
     {
         DbSet<Event> Events { get; }
+
+        DbSet<Notification> Notifications { get; }
 
         DbSet<Resource> Resources { get; }
 
