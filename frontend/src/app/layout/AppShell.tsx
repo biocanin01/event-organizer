@@ -30,6 +30,7 @@ import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { applicationRoles, type ApplicationRole } from '../../features/auth/types'
 import { useAuth } from '../../features/auth/useAuth'
+import { NotificationCenter } from '../../features/notifications/NotificationCenter'
 import { BrandMark } from '../../shared/components/BrandMark'
 
 const drawerWidth = 272
@@ -143,9 +144,13 @@ export function AppShell() {
 
   const drawerContent = (
     <Stack sx={{ minHeight: '100%' }}>
-      <Box sx={{ px: 2.5, py: 2 }}>
+      <Stack
+        direction="row"
+        sx={{ alignItems: 'center', justifyContent: 'space-between', px: 2.5, py: 2 }}
+      >
         <BrandMark />
-      </Box>
+        {isDesktop && <NotificationCenter />}
+      </Stack>
       <Divider />
       <List sx={{ px: 1.5, py: 2 }}>
         {visibleNavigationItems.map((item) => (
@@ -211,11 +216,14 @@ export function AppShell() {
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           <BrandMark />
-          <Tooltip title="Otvori navigaciju">
-            <IconButton onClick={() => setMobileOpen(true)}>
-              <MenuRoundedIcon />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={0.5}>
+            {!isDesktop && <NotificationCenter mobile />}
+            <Tooltip title="Otvori navigaciju">
+              <IconButton onClick={() => setMobileOpen(true)}>
+                <MenuRoundedIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
         </Toolbar>
       </AppBar>
 

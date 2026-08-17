@@ -206,6 +206,7 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Korisnici')).toBeInTheDocument()
     expect(screen.getByText('Zahtevi za organizatore')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Obaveštenja' })).toBeInTheDocument()
   })
 
   it('allows a participant to submit an organizer role request', async () => {
