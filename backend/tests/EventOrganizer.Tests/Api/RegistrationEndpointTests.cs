@@ -1,6 +1,7 @@
 using EventOrganizer.Api.Contracts.Registrations;
 using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Notifications;
 using EventOrganizer.Domain.Registrations;
 using EventOrganizer.Domain.Users;
 using EventOrganizer.Infrastructure.Identity;
@@ -113,6 +114,35 @@ namespace EventOrganizer.Tests.Api
 
             Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var notifications = await dbContext.Notifications
+                .Where(item => item.RelatedEntityId == eventId
+                    && item.Type == NotificationType.RegistrationConfirmed)
+                .ToArrayAsync();
+            var notification = Assert.Single(notifications);
+            Assert.Equal(firstParticipantUserId, notification.RecipientUserId);
+        }
+
+        [Fact]
+        public async Task Confirm_ByEventOwner_CreatesNotificationForParticipant()
+        {
+            var (eventId, organizerUserId, participantUserId) = await SeedEventAsync();
+            var registrationId = await CreateRegistrationAsync(eventId, participantUserId);
+            var client = CreateAuthenticatedClient(organizerUserId, ApplicationRoles.Organizer);
+
+            var response = await client.PatchAsJsonAsync(
+                $"/api/registrations/{registrationId}/confirm",
+                new RegistrationVersionRequest(1));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var notification = await dbContext.Notifications
+                .SingleAsync(item => item.RecipientUserId == participantUserId
+                    && item.RelatedEntityId == eventId);
+            Assert.Equal(NotificationType.RegistrationConfirmed, notification.Type);
+            Assert.Equal(NotificationRelatedEntityType.Event, notification.RelatedEntityType);
         }
 
         [Fact]
@@ -130,6 +160,33 @@ namespace EventOrganizer.Tests.Api
             using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             Assert.Equal("Rejected", payload.RootElement.GetProperty("status").GetString());
             Assert.Equal("Kapacitet je rezervisan.", payload.RootElement.GetProperty("rejectionReason").GetString());
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var notification = await dbContext.Notifications
+                .SingleAsync(item => item.RecipientUserId == participantUserId
+                    && item.RelatedEntityId == eventId);
+            Assert.Equal(NotificationType.RegistrationRejected, notification.Type);
+            Assert.Contains("Kapacitet je rezervisan.", notification.Message);
+        }
+
+        [Fact]
+        public async Task Cancel_ByParticipant_CreatesNotificationForOrganizer()
+        {
+            var (eventId, organizerUserId, participantUserId) = await SeedEventAsync();
+            var registrationId = await CreateRegistrationAsync(eventId, participantUserId);
+            var client = CreateAuthenticatedClient(participantUserId, ApplicationRoles.Participant);
+
+            var response = await client.PatchAsJsonAsync(
+                $"/api/registrations/{registrationId}/cancel",
+                new RegistrationVersionRequest(1));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var notification = await dbContext.Notifications
+                .SingleAsync(item => item.RecipientUserId == organizerUserId
+                    && item.RelatedEntityId == eventId);
+            Assert.Equal(NotificationType.RegistrationCancelled, notification.Type);
         }
 
         [Fact]

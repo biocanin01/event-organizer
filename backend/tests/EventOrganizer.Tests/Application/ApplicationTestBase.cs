@@ -1,6 +1,7 @@
 ﻿using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Resources;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
 using Microsoft.Data.Sqlite;
@@ -122,6 +123,11 @@ namespace EventOrganizer.Tests.Application
             return await DbContext.EventResourceBookings
                 .Include(booking => booking.Items)
                 .SingleAsync(booking => booking.Id == bookingId);
+        }
+
+        protected NotificationService CreateNotificationService()
+        {
+            return new NotificationService(DbContext);
         }
 
         public void Dispose()

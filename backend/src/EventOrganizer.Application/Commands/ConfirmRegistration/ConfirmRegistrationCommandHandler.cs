@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Application.Registrations;
 using EventOrganizer.Application.Responses;
 using EventOrganizer.Domain.Events;
@@ -18,17 +19,20 @@ namespace EventOrganizer.Application.Commands.ConfirmRegistration
         private readonly ICurrentUserService _currentUserService;
         private readonly IUserManagementService _userManagementService;
         private readonly EventAuthorizationService _eventAuthorizationService;
+        private readonly INotificationService _notificationService;
 
         public ConfirmRegistrationCommandHandler(
             IApplicationDbContext dbContext,
             ICurrentUserService currentUserService,
             IUserManagementService userManagementService,
-            EventAuthorizationService eventAuthorizationService)
+            EventAuthorizationService eventAuthorizationService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _currentUserService = currentUserService;
             _userManagementService = userManagementService;
             _eventAuthorizationService = eventAuthorizationService;
+            _notificationService = notificationService;
         }
 
         public async Task<RegistrationResponse> Handle(
@@ -73,9 +77,15 @@ namespace EventOrganizer.Application.Commands.ConfirmRegistration
                 throw new ConflictException("The event capacity has been reached.");
             }
 
+            var now = DateTime.UtcNow;
             try
             {
-                registration.Confirm(decisionUserId, DateTime.UtcNow);
+                registration.Confirm(decisionUserId, now);
+                _notificationService.AddRegistrationConfirmed(
+                    registration.ParticipantUserId,
+                    eventItem.Id,
+                    eventItem.Title,
+                    now);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await _dbContext.CommitTransactionAsync(transaction, cancellationToken);
             }

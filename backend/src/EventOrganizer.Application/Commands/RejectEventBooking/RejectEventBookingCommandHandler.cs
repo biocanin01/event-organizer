@@ -1,8 +1,10 @@
 using EventOrganizer.Application.Bookings;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Application.Responses;
 using EventOrganizer.Domain.Bookings;
+using EventOrganizer.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,13 +15,16 @@ namespace EventOrganizer.Application.Commands.RejectEventBooking
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUserService _currentUserService;
+        private readonly INotificationService _notificationService;
 
         public RejectEventBookingCommandHandler(
             IApplicationDbContext dbContext,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _currentUserService = currentUserService;
+            _notificationService = notificationService;
         }
 
         public async Task<EventResourceBookingResponse> Handle(
@@ -38,15 +43,31 @@ namespace EventOrganizer.Application.Commands.RejectEventBooking
                 throw new NotFoundException(nameof(EventResourceBooking), request.BookingId);
             }
 
+            var eventItem = await _dbContext.Events.FirstOrDefaultAsync(
+                eventItem => eventItem.Id == booking.EventId,
+                cancellationToken);
+            if (eventItem is null)
+            {
+                throw new NotFoundException(nameof(Event), booking.EventId);
+            }
+
             EventBookingVersionGuard.EnsureExpectedVersion(booking, request.Version);
+            var now = DateTime.UtcNow;
             try
             {
-                booking.Reject(adminUserId, request.DecisionReason, DateTime.UtcNow);
+                booking.Reject(adminUserId, request.DecisionReason, now);
             }
             catch (InvalidOperationException exception)
             {
                 throw new ConflictException(exception.Message, exception);
             }
+
+            _notificationService.AddBookingRejected(
+                eventItem.OrganizerUserId,
+                eventItem.Id,
+                eventItem.Title,
+                booking.DecisionReason,
+                now);
 
             try
             {

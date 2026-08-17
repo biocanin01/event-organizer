@@ -5,6 +5,8 @@ using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Notifications;
+using EventOrganizer.Domain.Registrations;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Tests.Application.Events
@@ -24,6 +26,30 @@ namespace EventOrganizer.Tests.Application.Events
             await SetBookingStatusAsync(booking.Id, EventResourceBookingStatus.Approved);
             eventItem = await ReloadEventAsync(eventItem.Id);
             eventItem.Publish(DateTime.UtcNow.AddHours(-1));
+            var confirmedParticipantUserId = await CreateOrganizerUserAsync("confirmed@example.com");
+            var pendingParticipantUserId = await CreateOrganizerUserAsync("pending@example.com");
+            var rejectedParticipantUserId = await CreateOrganizerUserAsync("rejected@example.com");
+            var confirmedRegistration = Registration.Create(
+                eventItem.Id,
+                confirmedParticipantUserId,
+                DateTime.UtcNow.AddHours(-3));
+            confirmedRegistration.Confirm(organizerUserId, DateTime.UtcNow.AddHours(-2));
+            var pendingRegistration = Registration.Create(
+                eventItem.Id,
+                pendingParticipantUserId,
+                DateTime.UtcNow.AddHours(-3));
+            var rejectedRegistration = Registration.Create(
+                eventItem.Id,
+                rejectedParticipantUserId,
+                DateTime.UtcNow.AddHours(-3));
+            rejectedRegistration.Reject(
+                "Capacity reached.",
+                organizerUserId,
+                DateTime.UtcNow.AddHours(-2));
+            DbContext.Registrations.AddRange(
+                confirmedRegistration,
+                pendingRegistration,
+                rejectedRegistration);
             await DbContext.SaveChangesAsync();
             var handler = CreateHandler(organizerUserId, ApplicationRoles.Organizer);
 
@@ -36,6 +62,11 @@ namespace EventOrganizer.Tests.Application.Events
             var unchangedBooking = await DbContext.EventResourceBookings
                 .SingleAsync(storedBooking => storedBooking.Id == booking.Id);
             Assert.Equal(EventResourceBookingStatus.Approved, unchangedBooking.Status);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(confirmedParticipantUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.ReviewAvailable, notification.Type);
+            Assert.Equal(NotificationRelatedEntityType.Event, notification.RelatedEntityType);
+            Assert.Equal(eventItem.Id, notification.RelatedEntityId);
         }
 
         [Theory]
@@ -114,7 +145,8 @@ namespace EventOrganizer.Tests.Application.Events
         {
             return new CompleteEventCommandHandler(
                 DbContext,
-                new EventAuthorizationService(new TestCurrentUserService(userId, roles)));
+                new EventAuthorizationService(new TestCurrentUserService(userId, roles)),
+                CreateNotificationService());
         }
 
         private sealed class TestCurrentUserService : ICurrentUserService

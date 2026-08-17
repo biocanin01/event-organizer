@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
 using EventOrganizer.Domain.Registrations;
@@ -13,13 +14,16 @@ namespace EventOrganizer.Application.Commands.CancelEvent
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly EventAuthorizationService _eventAuthorizationService;
+        private readonly INotificationService _notificationService;
 
         public CancelEventCommandHandler(
             IApplicationDbContext dbContext,
-            EventAuthorizationService eventAuthorizationService)
+            EventAuthorizationService eventAuthorizationService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _eventAuthorizationService = eventAuthorizationService;
+            _notificationService = notificationService;
         }
 
         public async Task Handle(
@@ -65,6 +69,12 @@ namespace EventOrganizer.Application.Commands.CancelEvent
             {
                 registration.Cancel(now);
             }
+
+            _notificationService.AddEventCancelled(
+                activeRegistrations.Select(registration => registration.ParticipantUserId),
+                eventItem.Id,
+                eventItem.Title,
+                now);
 
             try
             {

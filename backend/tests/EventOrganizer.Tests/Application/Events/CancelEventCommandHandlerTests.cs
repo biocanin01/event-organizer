@@ -5,6 +5,7 @@ using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Domain.Bookings;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Notifications;
 using EventOrganizer.Domain.Registrations;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +20,8 @@ namespace EventOrganizer.Tests.Application.Events
             var eventItem = await CreateEventAsync(organizerUserId);
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer),
+                CreateNotificationService());
 
             await handler.Handle(
                 new CancelEventCommand(eventItem.Id),
@@ -37,7 +39,8 @@ namespace EventOrganizer.Tests.Application.Events
             var eventItem = await CreateEventAsync(organizerUserId);
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(adminUserId, ApplicationRoles.Admin));
+                CreateAuthorizationService(adminUserId, ApplicationRoles.Admin),
+                CreateNotificationService());
 
             await handler.Handle(
                 new CancelEventCommand(eventItem.Id),
@@ -63,7 +66,8 @@ namespace EventOrganizer.Tests.Application.Events
 
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer),
+                CreateNotificationService());
 
             await handler.Handle(
                 new CancelEventCommand(eventItem.Id),
@@ -91,7 +95,8 @@ namespace EventOrganizer.Tests.Application.Events
             booking = await SetBookingStatusAsync(booking.Id, status);
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer),
+                CreateNotificationService());
 
             await handler.Handle(
                 new CancelEventCommand(eventItem.Id),
@@ -113,7 +118,8 @@ namespace EventOrganizer.Tests.Application.Events
             var eventItem = await CreateEventAsync(ownerUserId);
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(otherOrganizerUserId, ApplicationRoles.Organizer));
+                CreateAuthorizationService(otherOrganizerUserId, ApplicationRoles.Organizer),
+                CreateNotificationService());
 
             await Assert.ThrowsAsync<ForbiddenException>(() =>
                 handler.Handle(
@@ -140,11 +146,17 @@ namespace EventOrganizer.Tests.Application.Events
             await DbContext.SaveChangesAsync();
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer),
+                CreateNotificationService());
 
             await handler.Handle(new CancelEventCommand(eventItem.Id), CancellationToken.None);
 
             Assert.Equal(RegistrationStatus.Cancelled, registration.Status);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(participantUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.EventCancelled, notification.Type);
+            Assert.Equal(NotificationRelatedEntityType.Event, notification.RelatedEntityType);
+            Assert.Equal(eventItem.Id, notification.RelatedEntityId);
         }
 
         [Fact]
@@ -155,7 +167,8 @@ namespace EventOrganizer.Tests.Application.Events
             var eventItem = await CreateEventAsync(organizerUserId);
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(participantUserId, ApplicationRoles.Participant));
+                CreateAuthorizationService(participantUserId, ApplicationRoles.Participant),
+                CreateNotificationService());
 
             await Assert.ThrowsAsync<ForbiddenException>(() =>
                 handler.Handle(
@@ -169,7 +182,8 @@ namespace EventOrganizer.Tests.Application.Events
             var eventItem = await CreateEventAsync();
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(null));
+                CreateAuthorizationService(null),
+                CreateNotificationService());
 
             await Assert.ThrowsAsync<UnauthorizedException>(() =>
                 handler.Handle(
@@ -183,7 +197,8 @@ namespace EventOrganizer.Tests.Application.Events
             var organizerUserId = await CreateOrganizerUserAsync();
             var handler = new CancelEventCommandHandler(
                 DbContext,
-                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer));
+                CreateAuthorizationService(organizerUserId, ApplicationRoles.Organizer),
+                CreateNotificationService());
 
             var act = () => handler.Handle(
                 new CancelEventCommand(Guid.NewGuid()),

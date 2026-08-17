@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Bookings;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Domain.Bookings;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +13,16 @@ namespace EventOrganizer.Application.Commands.ExpireEventBookings
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUserService _currentUserService;
+        private readonly INotificationService _notificationService;
 
         public ExpireEventBookingsCommandHandler(
             IApplicationDbContext dbContext,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _currentUserService = currentUserService;
+            _notificationService = notificationService;
         }
 
         public async Task<int> Handle(
@@ -33,18 +37,36 @@ namespace EventOrganizer.Application.Commands.ExpireEventBookings
                     && booking.HoldExpiresAtUtc <= now)
                 .ToArrayAsync(cancellationToken);
 
-            var expiredCount = 0;
+            var expiredBookings = new List<EventResourceBooking>();
             foreach (var booking in bookings)
             {
                 if (booking.Expire(now))
                 {
-                    expiredCount++;
+                    expiredBookings.Add(booking);
                 }
             }
 
-            if (expiredCount == 0)
+            if (expiredBookings.Count == 0)
             {
                 return 0;
+            }
+
+            var eventIds = expiredBookings
+                .Select(booking => booking.EventId)
+                .Distinct()
+                .ToArray();
+            var events = await _dbContext.Events
+                .Where(eventItem => eventIds.Contains(eventItem.Id))
+                .ToDictionaryAsync(eventItem => eventItem.Id, cancellationToken);
+
+            foreach (var booking in expiredBookings)
+            {
+                var eventItem = events[booking.EventId];
+                _notificationService.AddBookingExpired(
+                    eventItem.OrganizerUserId,
+                    eventItem.Id,
+                    eventItem.Title,
+                    now);
             }
 
             try
@@ -58,7 +80,7 @@ namespace EventOrganizer.Application.Commands.ExpireEventBookings
                     exception);
             }
 
-            return expiredCount;
+            return expiredBookings.Count;
         }
     }
 }

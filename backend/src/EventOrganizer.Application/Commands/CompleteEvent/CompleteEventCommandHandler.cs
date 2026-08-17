@@ -1,7 +1,9 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Domain.Events;
+using EventOrganizer.Domain.Registrations;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,13 +13,16 @@ namespace EventOrganizer.Application.Commands.CompleteEvent
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly EventAuthorizationService _eventAuthorizationService;
+        private readonly INotificationService _notificationService;
 
         public CompleteEventCommandHandler(
             IApplicationDbContext dbContext,
-            EventAuthorizationService eventAuthorizationService)
+            EventAuthorizationService eventAuthorizationService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _eventAuthorizationService = eventAuthorizationService;
+            _notificationService = notificationService;
         }
 
         public async Task Handle(
@@ -49,6 +54,17 @@ namespace EventOrganizer.Application.Commands.CompleteEvent
             {
                 throw new ConflictException(exception.Message, exception);
             }
+
+            var confirmedParticipantUserIds = await _dbContext.Registrations
+                .Where(registration => registration.EventId == eventItem.Id
+                    && registration.Status == RegistrationStatus.Confirmed)
+                .Select(registration => registration.ParticipantUserId)
+                .ToArrayAsync(cancellationToken);
+            _notificationService.AddReviewAvailable(
+                confirmedParticipantUserIds,
+                eventItem.Id,
+                eventItem.Title,
+                now);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
         }

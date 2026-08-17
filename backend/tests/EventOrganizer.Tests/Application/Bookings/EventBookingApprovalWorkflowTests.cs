@@ -9,6 +9,7 @@ using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Application.Common.Options;
 using EventOrganizer.Domain.Bookings;
+using EventOrganizer.Domain.Notifications;
 using EventOrganizer.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -31,6 +32,12 @@ namespace EventOrganizer.Tests.Application.Bookings
             Assert.Equal(adminUserId, response.DecidedByUserId);
             Assert.NotNull(response.DecidedAtUtc);
             Assert.Null(response.DecisionReason);
+            var eventItem = await DbContext.Events.SingleAsync(item => item.Id == booking.EventId);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(eventItem.OrganizerUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.BookingApproved, notification.Type);
+            Assert.Equal(NotificationRelatedEntityType.Event, notification.RelatedEntityType);
+            Assert.Equal(eventItem.Id, notification.RelatedEntityId);
         }
 
         [Fact]
@@ -43,6 +50,8 @@ namespace EventOrganizer.Tests.Application.Bookings
                 CreateApproveHandler(Guid.NewGuid()).Handle(
                     new ApproveEventBookingCommand(booking.Id, booking.Version),
                     CancellationToken.None));
+
+            Assert.Empty(await DbContext.Notifications.ToArrayAsync());
         }
 
         [Fact]
@@ -63,6 +72,11 @@ namespace EventOrganizer.Tests.Application.Bookings
             Assert.Equal(EventResourceBookingStatus.Rejected.ToString(), response.Status);
             Assert.Equal("Speaker unavailable.", response.DecisionReason);
             Assert.Equal(adminUserId, response.DecidedByUserId);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(organizerUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.BookingRejected, notification.Type);
+            Assert.Contains("Speaker unavailable.", notification.Message);
+            Assert.Equal(eventItem.Id, notification.RelatedEntityId);
 
             var revised = await CreateReviseHandler(organizerUserId).Handle(
                 new ReviseEventBookingCommand(eventItem.Id, response.Version),
@@ -100,6 +114,12 @@ namespace EventOrganizer.Tests.Application.Bookings
             Assert.Equal(
                 EventResourceBookingStatus.Draft,
                 (await ReloadBookingByIdAsync(draftBooking.Id)).Status);
+            var expiredEvent = await DbContext.Events
+                .SingleAsync(eventItem => eventItem.Id == expiredBooking.EventId);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(expiredEvent.OrganizerUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.BookingExpired, notification.Type);
+            Assert.Equal(expiredEvent.Id, notification.RelatedEntityId);
         }
 
         [Fact]
@@ -111,6 +131,8 @@ namespace EventOrganizer.Tests.Application.Bookings
                 CreateApproveHandler(Guid.NewGuid()).Handle(
                     new ApproveEventBookingCommand(booking.Id, 999),
                     CancellationToken.None));
+
+            Assert.Empty(await DbContext.Notifications.ToArrayAsync());
         }
 
         [Fact]
@@ -231,7 +253,8 @@ namespace EventOrganizer.Tests.Application.Bookings
                 DbContext,
                 new TestCurrentUserService(
                     userId,
-                    roles.Length == 0 ? [ApplicationRoles.Admin] : roles));
+                    roles.Length == 0 ? [ApplicationRoles.Admin] : roles),
+                CreateNotificationService());
         }
 
         private RejectEventBookingCommandHandler CreateRejectHandler(
@@ -244,7 +267,8 @@ namespace EventOrganizer.Tests.Application.Bookings
                 DbContext,
                 new TestCurrentUserService(
                     userId,
-                    roles.Length == 0 ? [ApplicationRoles.Admin] : roles));
+                    roles.Length == 0 ? [ApplicationRoles.Admin] : roles),
+                CreateNotificationService());
         }
 
         private ExpireEventBookingsCommandHandler CreateExpireHandler(Guid userId)
@@ -253,7 +277,8 @@ namespace EventOrganizer.Tests.Application.Bookings
 
             return new ExpireEventBookingsCommandHandler(
                 DbContext,
-                new TestCurrentUserService(userId, ApplicationRoles.Admin));
+                new TestCurrentUserService(userId, ApplicationRoles.Admin),
+                CreateNotificationService());
         }
 
         private ReviseEventBookingCommandHandler CreateReviseHandler(Guid userId)

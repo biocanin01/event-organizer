@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Application.Registrations;
 using EventOrganizer.Application.Responses;
 using EventOrganizer.Domain.Registrations;
@@ -14,15 +15,18 @@ namespace EventOrganizer.Application.Commands.CancelRegistration
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUserService _currentUserService;
         private readonly IUserManagementService _userManagementService;
+        private readonly INotificationService _notificationService;
 
         public CancelRegistrationCommandHandler(
             IApplicationDbContext dbContext,
             ICurrentUserService currentUserService,
-            IUserManagementService userManagementService)
+            IUserManagementService userManagementService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _currentUserService = currentUserService;
             _userManagementService = userManagementService;
+            _notificationService = notificationService;
         }
 
         public async Task<RegistrationResponse> Handle(
@@ -54,6 +58,11 @@ namespace EventOrganizer.Application.Commands.CancelRegistration
             try
             {
                 registration.Cancel(now);
+                _notificationService.AddRegistrationCancelled(
+                    eventItem.OrganizerUserId,
+                    eventItem.Id,
+                    eventItem.Title,
+                    now);
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (InvalidOperationException exception)

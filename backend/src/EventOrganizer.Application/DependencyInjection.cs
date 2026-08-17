@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Behaviors;
 using EventOrganizer.Application.Common.Options;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Application.Recommendations.Candidates;
 using EventOrganizer.Application.Recommendations.Optimization;
 using FluentValidation;
@@ -24,6 +25,8 @@ namespace EventOrganizer.Application
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             services.AddScoped<EventAuthorizationService>();
+
+            services.AddScoped<INotificationService, NotificationService>();
 
             services.AddScoped<IResourceCandidateProvider, ResourceCandidateProvider>();
 

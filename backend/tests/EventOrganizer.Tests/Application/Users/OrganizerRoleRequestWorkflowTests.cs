@@ -8,6 +8,7 @@ using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Application.Queries.GetMyOrganizerRoleRequest;
 using EventOrganizer.Application.Queries.ListOrganizerRoleRequests;
 using EventOrganizer.Domain.Users;
+using EventOrganizer.Domain.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventOrganizer.Tests.Application.Users
@@ -139,7 +140,8 @@ namespace EventOrganizer.Tests.Application.Users
             var handler = new ApproveOrganizerRoleRequestCommandHandler(
                 DbContext,
                 new TestCurrentUserService(adminUserId, ApplicationRoles.Admin),
-                identityService);
+                identityService,
+                CreateNotificationService());
 
             await handler.Handle(
                 new ApproveOrganizerRoleRequestCommand(
@@ -154,6 +156,11 @@ namespace EventOrganizer.Tests.Application.Users
                 assignedRole =>
                     assignedRole.UserId == participantUserId
                     && assignedRole.Role == ApplicationRoles.Organizer);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(participantUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.OrganizerRoleRequestApproved, notification.Type);
+            Assert.Equal(NotificationRelatedEntityType.OrganizerRoleRequest, notification.RelatedEntityType);
+            Assert.Equal(organizerRoleRequest.Id, notification.RelatedEntityId);
         }
 
         [Fact]
@@ -178,7 +185,8 @@ namespace EventOrganizer.Tests.Application.Users
             var handler = new ApproveOrganizerRoleRequestCommandHandler(
                 DbContext,
                 new TestCurrentUserService(adminUserId, ApplicationRoles.Admin),
-                identityService);
+                identityService,
+                CreateNotificationService());
 
             await Assert.ThrowsAsync<ConflictException>(() =>
                 handler.Handle(
@@ -188,6 +196,7 @@ namespace EventOrganizer.Tests.Application.Users
                     CancellationToken.None));
 
             Assert.Empty(identityService.AssignedRoles);
+            Assert.Empty(await DbContext.Notifications.ToArrayAsync());
         }
 
         [Fact]
@@ -204,7 +213,8 @@ namespace EventOrganizer.Tests.Application.Users
 
             var handler = new RejectOrganizerRoleRequestCommandHandler(
                 DbContext,
-                new TestCurrentUserService(adminUserId, ApplicationRoles.Admin));
+                new TestCurrentUserService(adminUserId, ApplicationRoles.Admin),
+                CreateNotificationService());
 
             await handler.Handle(
                 new RejectOrganizerRoleRequestCommand(
@@ -216,6 +226,11 @@ namespace EventOrganizer.Tests.Application.Users
             Assert.Equal(OrganizerRoleRequestStatus.Rejected, organizerRoleRequest.Status);
             Assert.Equal("Please provide more details about planned events.", organizerRoleRequest.DecisionReason);
             Assert.Equal(2, organizerRoleRequest.Version);
+            var notification = await DbContext.Notifications.SingleAsync();
+            Assert.Equal(participantUserId, notification.RecipientUserId);
+            Assert.Equal(NotificationType.OrganizerRoleRequestRejected, notification.Type);
+            Assert.Contains("Please provide more details", notification.Message);
+            Assert.Equal(organizerRoleRequest.Id, notification.RelatedEntityId);
         }
 
         [Fact]

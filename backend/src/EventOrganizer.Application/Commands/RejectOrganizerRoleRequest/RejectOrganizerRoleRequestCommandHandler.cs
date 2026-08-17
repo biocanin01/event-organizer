@@ -1,5 +1,6 @@
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Domain.Users;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,13 +12,16 @@ namespace EventOrganizer.Application.Commands.RejectOrganizerRoleRequest
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUserService _currentUserService;
+        private readonly INotificationService _notificationService;
 
         public RejectOrganizerRoleRequestCommandHandler(
             IApplicationDbContext dbContext,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _currentUserService = currentUserService;
+            _notificationService = notificationService;
         }
 
         public async Task Handle(
@@ -39,10 +43,16 @@ namespace EventOrganizer.Application.Commands.RejectOrganizerRoleRequest
 
             EnsureExpectedVersion(organizerRoleRequest.Version, request.Version);
 
+            var now = DateTime.UtcNow;
             organizerRoleRequest.Reject(
                 adminUserId,
                 request.DecisionReason,
-                DateTime.UtcNow);
+                now);
+            _notificationService.AddOrganizerRoleRequestRejected(
+                organizerRoleRequest.UserId,
+                organizerRoleRequest.Id,
+                organizerRoleRequest.DecisionReason!,
+                now);
 
             try
             {

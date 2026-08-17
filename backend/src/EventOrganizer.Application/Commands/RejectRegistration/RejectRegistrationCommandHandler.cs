@@ -1,6 +1,7 @@
 using EventOrganizer.Application.Common.Authorization;
 using EventOrganizer.Application.Common.Exceptions;
 using EventOrganizer.Application.Common.Interfaces;
+using EventOrganizer.Application.Notifications;
 using EventOrganizer.Application.Registrations;
 using EventOrganizer.Application.Responses;
 using EventOrganizer.Domain.Events;
@@ -17,17 +18,20 @@ namespace EventOrganizer.Application.Commands.RejectRegistration
         private readonly ICurrentUserService _currentUserService;
         private readonly IUserManagementService _userManagementService;
         private readonly EventAuthorizationService _eventAuthorizationService;
+        private readonly INotificationService _notificationService;
 
         public RejectRegistrationCommandHandler(
             IApplicationDbContext dbContext,
             ICurrentUserService currentUserService,
             IUserManagementService userManagementService,
-            EventAuthorizationService eventAuthorizationService)
+            EventAuthorizationService eventAuthorizationService,
+            INotificationService notificationService)
         {
             _dbContext = dbContext;
             _currentUserService = currentUserService;
             _userManagementService = userManagementService;
             _eventAuthorizationService = eventAuthorizationService;
+            _notificationService = notificationService;
         }
 
         public async Task<RegistrationResponse> Handle(
@@ -58,9 +62,16 @@ namespace EventOrganizer.Application.Commands.RejectRegistration
                 _eventAuthorizationService);
             RegistrationGuards.EnsureExpectedVersion(registration, request.Version);
 
+            var now = DateTime.UtcNow;
             try
             {
-                registration.Reject(request.Reason, decisionUserId, DateTime.UtcNow);
+                registration.Reject(request.Reason, decisionUserId, now);
+                _notificationService.AddRegistrationRejected(
+                    registration.ParticipantUserId,
+                    eventItem.Id,
+                    eventItem.Title,
+                    registration.RejectionReason!,
+                    now);
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (InvalidOperationException exception)
