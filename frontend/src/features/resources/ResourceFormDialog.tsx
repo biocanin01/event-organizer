@@ -179,7 +179,7 @@ export function ResourceFormDialog({
 
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <TextField
-              label="Cena"
+              label="Cena angažovanja"
               type="number"
               fullWidth
               {...register('cost')}

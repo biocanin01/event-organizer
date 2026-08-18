@@ -276,9 +276,11 @@ export function NotificationCenter({ mobile = false }: NotificationCenterProps) 
       <Tooltip title="Obaveštenja">
         <IconButton
           aria-label={
-            unreadCount > 0
-              ? `Obaveštenja, ${unreadCount} nepročitanih`
-              : 'Obaveštenja'
+            unreadCount === 1
+              ? 'Obaveštenja, 1 nepročitano'
+              : unreadCount > 1
+                ? `Obaveštenja, ${unreadCount} nepročitanih`
+                : 'Obaveštenja'
           }
           onClick={handleOpen}
         >

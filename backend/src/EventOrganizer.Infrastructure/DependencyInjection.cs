@@ -2,6 +2,7 @@ using EventOrganizer.Application.Common.Interfaces;
 using EventOrganizer.Infrastructure.Authentication;
 using EventOrganizer.Infrastructure.Identity;
 using EventOrganizer.Infrastructure.Persistance;
+using EventOrganizer.Infrastructure.Persistance.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,8 @@ namespace EventOrganizer.Infrastructure
 
             services.Configure<InitialAdminSettings>(
                 configuration.GetSection(InitialAdminSettings.SectionName));
+            services.Configure<DemoDataSettings>(
+                configuration.GetSection(DemoDataSettings.SectionName));
 
             services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -77,6 +80,7 @@ namespace EventOrganizer.Infrastructure
                 .AddDefaultTokenProviders();
 
             services.AddScoped<IdentitySeeder>();
+            services.AddScoped<DemoDataSeeder>();
 
             services.AddScoped<IClientContextService, ClientContextService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();

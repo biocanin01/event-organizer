@@ -291,7 +291,7 @@ export function ResourcesPage() {
               <TableCell>Resurs</TableCell>
               <TableCell>Tip</TableCell>
               <TableCell>Detalji</TableCell>
-              <TableCell>Cena</TableCell>
+              <TableCell>Cena angažovanja</TableCell>
               <TableCell>Kvalitet</TableCell>
               <TableCell>Status</TableCell>
               {isAdmin && <TableCell align="right">Akcije</TableCell>}

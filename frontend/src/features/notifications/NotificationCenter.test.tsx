@@ -131,7 +131,7 @@ describe('NotificationCenter', () => {
     renderNotificationCenter()
 
     const trigger = await screen.findByRole('button', {
-      name: 'Obaveštenja, 1 nepročitanih',
+      name: 'Obaveštenja, 1 nepročitano',
     })
     expect(
       fetchMock.mock.calls.some(([input]) =>
@@ -153,7 +153,7 @@ describe('NotificationCenter', () => {
     renderNotificationCenter()
     await user.click(
       await screen.findByRole('button', {
-        name: 'Obaveštenja, 1 nepročitanih',
+        name: 'Obaveštenja, 1 nepročitano',
       }),
     )
 
@@ -182,7 +182,7 @@ describe('NotificationCenter', () => {
     renderNotificationCenter()
     await user.click(
       await screen.findByRole('button', {
-        name: 'Obaveštenja, 1 nepročitanih',
+        name: 'Obaveštenja, 1 nepročitano',
       }),
     )
 

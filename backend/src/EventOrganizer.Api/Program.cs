@@ -5,6 +5,7 @@ using EventOrganizer.Application.Common.Constants;
 using EventOrganizer.Application.Common.Options;
 using EventOrganizer.Infrastructure;
 using EventOrganizer.Infrastructure.Identity;
+using EventOrganizer.Infrastructure.Persistance.Seeding;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -103,6 +104,7 @@ await app.Services.SeedIdentityAsync();
 
 if (app.Environment.IsDevelopment())
 {
+    await app.Services.SeedDemoDataAsync();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
